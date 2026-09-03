@@ -1,0 +1,15 @@
+---
+// Workers has no implicit 404 handling, so this page plus
+// `not_found_handling: "404-page"` in wrangler.jsonc is what serves unknown
+// addresses. Copy matches the live WordPress 404 exactly.
+import Base from '../layouts/Base.astro';
+import ThemeArchive from '../components/ThemeArchive.astro';
+
+export const prerender = true;
+---
+
+<Base title="Page not found – BolDe Imaging">
+  <ThemeArchive heading="The page can’t be found.">
+    <p>It looks like nothing was found at this location.</p>
+  </ThemeArchive>
+</Base>

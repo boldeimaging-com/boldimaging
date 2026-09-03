@@ -1,0 +1,549 @@
+---
+// / — Elementor template post-25 ("single-page" for the front page).
+//
+//   #3d223f7  hero        min-height 100vh (60vh <=767), flex column centred,
+//                         background video Bolde-Imaging-Video.mp4 under a
+//                         black overlay at 0.5
+//   #ab4a3ba  "Since 1976" Titillium 18/18 400 #fff, centred
+//   #d1a99ea  h1          Titillium 5vw/1em 600 uppercase #fff
+//                         (8vw <=1024, 10vw <=767)
+//   #b94ab44  "Explore"   icon list, 20px white arrow + 18px label, -> #explore
+//   #faf9b1e  "Be BolDe." bg #363636 + Slider3_BG2.jpg cover center
+//                         (fixed attachment >=1025) under #2A2A2A at 0.96;
+//                         padding 100px 10px
+//   #d1efac8  heading     Titillium 48/48 500 #fff
+//   #978e5b6  copy        Titillium 18/1.5em 300 #fff
+//   #ed8be87  image band  tribute14.jpg cover; a spacer sets the height:
+//                         540px, 239px <=1024, 100px <=767
+//   #d8623db  "About Us"  128A233912.jpeg cover center (fixed >=1025) under
+//                         #FFFFFF at 0.91; padding 40px 0
+//   #32d583a  heading     Titillium 48/48 500 #777777
+//   #c67e76f  copy        Titillium 18/1.5em 300 #777777, margin-top 20px
+//   #0d52de6  clients h   Titillium 48/48 500 #7A7A7A centred, 8px below
+//   #171c70d  clients     carousel, 4 per view (2 <=767)
+//   #81b76d7  copy        Titillium 18/1.5em 500 #54595F
+//   #e80614f  assoc h     Titillium 48/48 500 #7A7A7A centred, -17px up,
+//                         40px of space below
+//   #ebad703  assoc       3-column WordPress gallery, pulled up 20px
+//   #b05d66e  galleries   bg #454545, padding 40px 0
+//   #1c9bf5d  heading     Titillium 48/48 500 #fff centred, 40px below
+//   #ad7bb01  carousel    3 per view, arrows outside, pulled up 21px
+//   #611ec3f  button      "All Galleries" -> /gallery/, Roboto 15/15 500,
+//                         bg #018BE3 (hover #1D9FF2), radius 3px, 12px 24px
+import Base from '../layouts/Base.astro';
+import ClientsMarquee from '../components/ClientsMarquee.astro';
+import ImageCarousel from '../components/ImageCarousel.astro';
+import { media } from '../consts';
+import { ASSOCIATIONS, CLIENTS, PROJECT_GALLERIES } from '../data/home';
+
+export const prerender = true;
+---
+
+<Base
+  title="BolDe Imaging"
+  description="BolDe Imaging Group is your single destination for all your signage needs — 2D and 3D signs, channel letters, backlit signs, full-colour LED panels, banners, awnings, construction hoarding, wayfinding, fascia signs and more."
+>
+  <!-- #3d223f7 -->
+  <section class="hero">
+    <div class="hero__video">
+      <video
+        src={media('2025/04/Bolde-Imaging-Video.mp4')}
+        autoplay
+        muted
+        loop
+        playsinline
+        preload="auto"
+        aria-hidden="true"
+        tabindex="-1"></video>
+    </div>
+    <div class="hero__overlay"></div>
+    <div class="container hero__inner">
+      <h2 class="hero__eyebrow">Since 1976</h2>
+      <h1 class="hero__title">We Build Brands</h1>
+      <ul class="hero__explore">
+        <li>
+          <a href="#explore">
+            <span class="hero__explore-icon"><i class="fas fa-arrow-down" aria-hidden="true"></i></span>
+            <span class="hero__explore-text">Explore</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- #faf9b1e -->
+  <section class="bebolde" id="explore" style={`--bg:url('${media('2021/04/Slider3_BG2.jpg')}')`}>
+    <div class="bebolde__overlay"></div>
+    <div class="container bebolde__inner">
+      <div class="pad">
+        <h2 class="bebolde__title">Be BolDe.</h2>
+        <div class="bebolde__copy">
+          <p>
+            BolDe Imaging Group is your single destination for all your signage needs. From our
+            state-of-the-art, 40,000 square foot facility, BolDe Imaging has the capabilities to
+            tackle the most complex projects. We provide 2D and 3D signs, channel letters, backlit
+            signs, full-colour LED panels, banners, awnings, construction hoarding, wayfinding signs,
+            fascia signs, and much more. Coast to coast, we offer unlimited signage solutions for
+            both interior and exterior applications. From the design process to fabrication and
+            installation, we are at the forefront of the signage industry.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- #ed8be87 -->
+  <section class="band" role="presentation" style={`--bg:url('${media('2021/04/tribute14.jpg')}')`}></section>
+
+  <!-- #d8623db -->
+  <section class="about" style={`--bg:url('${media('2021/04/128A233912.jpeg')}')`}>
+    <div class="about__overlay"></div>
+    <div class="container about__inner">
+      <div class="about__col">
+        <h2 class="about__title">About Us.</h2>
+        <div class="about__copy">
+          <p>
+            The partners of BolDe Imaging Group offer over a century of combined experience, catering
+            to a range of industries, including; retail, commercial, home building, and institutional.
+            Growing exponentially over the last few years, our team is constantly servicing new
+            industries, experimenting with the latest technologies, and improving our services,
+            always imagining new and better ways to get you noticed.
+          </p>
+        </div>
+
+        <h2 class="section-heading section-heading--clients">Our Great Clients</h2>
+        <div class="clients">
+          <ClientsMarquee images={CLIENTS} />
+        </div>
+
+        <div class="about__touch">
+          <p>
+            Want to get in touch? Just drop us a line on the <a
+              href="/contact/"
+              target="_blank"
+              rel="noopener">contact page</a
+            >. If you have files to upload for production or pricing, please head to our dedicated
+            FTP page.
+          </p>
+        </div>
+
+        <h2 class="section-heading section-heading--assoc">Associations</h2>
+        <div class="assoc">
+          {
+            ASSOCIATIONS.map((img) => (
+              <figure class="assoc__item">
+                <img
+                  src={media(img.src)}
+                  width={img.w}
+                  height={img.h}
+                  alt={img.alt}
+                  loading="lazy"
+                  decoding="async"
+                />
+              </figure>
+            ))
+          }
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- #b05d66e -->
+  <section class="galleries">
+    <div class="container galleries__inner">
+      <div class="galleries__col">
+        <h2 class="galleries__title">Project Galleries</h2>
+        <div class="galleries__carousel">
+          <ImageCarousel images={PROJECT_GALLERIES} />
+        </div>
+        <div class="galleries__cta">
+          <a class="button" href="/gallery/">
+            <span class="button__text">All Galleries</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .pad {
+    padding: 10px;
+  }
+
+  /* ---------- hero #3d223f7 ---------- */
+  .hero {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 100vh;
+    padding-inline: 10px;
+    overflow: hidden;
+  }
+
+  .hero__video {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+  }
+
+  .hero__video video {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100%;
+    height: 100%;
+    transform: translate(-50%, -50%);
+    object-fit: cover;
+  }
+
+  .hero__overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background-color: #000;
+    opacity: 0.5;
+  }
+
+  .hero__inner {
+    position: relative;
+    z-index: 1;
+    padding-block: 10px;
+  }
+
+  .hero__eyebrow {
+    margin: 0;
+    font-family: var(--font-body);
+    font-size: 18px;
+    line-height: 18px;
+    font-weight: 400;
+    color: #fff;
+    text-align: center;
+  }
+
+  .hero__title {
+    margin: 20px 0 0;
+    font-family: var(--font-body);
+    font-size: 5vw;
+    line-height: 1em;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: #fff;
+    text-align: center;
+  }
+
+  .hero__explore {
+    margin: 20px 0 0;
+  }
+
+  .hero__explore li {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+  }
+
+  .hero__explore a {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    font-family: var(--font-body);
+    font-size: 18px;
+    line-height: 1.3em;
+    font-weight: 400;
+    color: #fff;
+  }
+
+  .hero__explore-icon {
+    display: flex;
+    font-size: 20px;
+    color: #fff;
+  }
+
+  .hero__explore-icon i {
+    width: 1.25em;
+    text-align: center;
+  }
+
+  .hero__explore-text {
+    padding-inline-start: 5px;
+    color: #fff;
+  }
+
+  /* ---------- Be BolDe #faf9b1e ---------- */
+  .bebolde {
+    position: relative;
+    padding: 100px 10px;
+    background-color: var(--band-bebolde);
+    background-image: var(--bg);
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-size: cover;
+  }
+
+  .bebolde__overlay {
+    position: absolute;
+    inset: 0;
+    background-color: var(--band-bebolde-overlay);
+    opacity: 0.96;
+  }
+
+  .bebolde__inner {
+    position: relative;
+  }
+
+  .bebolde__title {
+    margin: 0 0 20px;
+    font-family: var(--font-body);
+    font-size: 48px;
+    line-height: 48px;
+    font-weight: 500;
+    color: #fff;
+  }
+
+  .bebolde__copy {
+    /* flow-root keeps the trailing paragraph margin inside the box, which is
+       how Elementor's widget container measures on the original. */
+    display: flow-root;
+
+    font-family: var(--font-body);
+    font-size: 18px;
+    line-height: 1.5em;
+    font-weight: 300;
+    color: #fff;
+  }
+
+  .bebolde__copy p {
+    margin: 0 0 14.4px;
+  }
+
+  /* ---------- image band #ed8be87 + spacer #6536ccc ---------- */
+  .band {
+    height: 540px;
+    background-image: var(--bg);
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-size: cover;
+  }
+
+  /* ---------- About Us #d8623db ---------- */
+  .about {
+    position: relative;
+    padding: 40px 0;
+    background-image: var(--bg);
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-size: cover;
+  }
+
+  .about__overlay {
+    position: absolute;
+    inset: 0;
+    background-color: #fff;
+    opacity: 0.91;
+  }
+
+  .about__inner {
+    position: relative;
+    display: flex;
+  }
+
+  /* #b3e22fb */
+  .about__col {
+    width: 100%;
+    padding: 0 0 25px;
+  }
+
+  .about__title {
+    margin: 0 0 20px;
+    font-family: var(--font-body);
+    font-size: 48px;
+    line-height: 48px;
+    font-weight: 500;
+    color: var(--about-grey);
+  }
+
+  .about__copy {
+    /* flow-root keeps the trailing paragraph margin inside the box, which is
+       how Elementor's widget container measures on the original. The 20px
+       above is padding rather than margin so it cannot collapse into the
+       heading's margin -- on the original it sits inside the widget box. */
+    display: flow-root;
+
+    margin: 0 0 20px;
+    padding-top: 20px;
+    font-family: var(--font-body);
+    font-size: 18px;
+    line-height: 1.5em;
+    font-weight: 300;
+    color: var(--about-grey);
+  }
+
+  .about__copy p {
+    margin: 0 0 14.4px;
+  }
+
+  .section-heading {
+    margin: 0;
+    font-family: var(--font-body);
+    font-size: 48px;
+    line-height: 48px;
+    font-weight: 500;
+    color: var(--e-global-color-text);
+    text-align: center;
+  }
+
+  /* Elementor's widget spacing puts 20px under every widget; the 8px is the
+     heading's own padding on top of that. */
+  .section-heading--clients {
+    padding-block-end: 8px;
+    margin-block-end: 20px;
+  }
+
+  .clients {
+    margin-block-end: 20px;
+  }
+
+  .about__touch {
+    /* flow-root keeps the trailing paragraph margin inside the box, which is
+       how Elementor's widget container measures on the original. */
+    display: flow-root;
+
+    margin-block-end: 20px;
+    font-family: var(--font-body);
+    font-size: 18px;
+    line-height: 1.5em;
+    font-weight: 500;
+    color: var(--e-global-color-secondary);
+  }
+
+  .about__touch p {
+    margin: 0 0 14.4px;
+  }
+
+  .section-heading--assoc {
+    margin-block-start: -17px;
+    margin-block-end: 20px;
+    padding-block-end: 40px;
+  }
+
+  /* #ebad703 — gallery-columns-3, pulled up 20px, no gaps. The original's
+     items are inline-block, so each one is its own height rather than being
+     stretched to the tallest in its row. */
+  .assoc {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    margin-block-start: -20px;
+  }
+
+  .assoc__item {
+    flex: 0 0 33.33%;
+    max-width: 33.33%;
+    margin: 0;
+    text-align: center;
+  }
+
+  .assoc__item img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    margin-inline: auto;
+  }
+
+  /* ---------- Project Galleries #b05d66e ---------- */
+  .galleries {
+    padding: 40px 0;
+    background-color: var(--band-galleries);
+  }
+
+  .galleries__title {
+    margin: 0 0 20px;
+    padding-block-end: 40px;
+    font-family: var(--font-body);
+    font-size: 48px;
+    line-height: 48px;
+    font-weight: 500;
+    color: #fff;
+    text-align: center;
+  }
+
+  .galleries__carousel {
+    margin-block-start: -21px;
+    margin-block-end: 20px;
+  }
+
+  .galleries__cta {
+    text-align: center;
+  }
+
+  /* #611ec3f */
+  .button {
+    display: inline-block;
+    padding: 12px 24px;
+    border-radius: 3px;
+    background-color: var(--e-global-color-6ad8614);
+    font-family: var(--font-button);
+    font-size: 15px;
+    line-height: 15px;
+    font-weight: 500;
+    color: #fff;
+    text-align: center;
+  }
+
+  .button:hover,
+  .button:focus {
+    background-color: var(--blue-hover);
+    color: #fff;
+  }
+
+  .button__text {
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+  }
+
+  /* Parallax: the two photo sections are background-attachment:fixed above the
+     tablet breakpoint on the original, and normal below it. */
+  @media (min-width: 1025px) {
+    .bebolde,
+    .about {
+      background-attachment: fixed;
+    }
+  }
+
+  @media (max-width: 1024px) {
+    .hero__title {
+      font-size: 8vw;
+    }
+
+    .band {
+      height: 239px;
+    }
+
+    .about__col {
+      padding: 15px;
+    }
+  }
+
+  @media (max-width: 767px) {
+    /* WordPress gallery columns collapse to one below the mobile breakpoint. */
+    .assoc__item {
+      flex-basis: 100%;
+      max-width: 100%;
+    }
+
+    .hero {
+      min-height: 60vh;
+    }
+
+    .hero__title {
+      font-size: 10vw;
+    }
+
+    .band {
+      height: 100px;
+    }
+  }
+</style>

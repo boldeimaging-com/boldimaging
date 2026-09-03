@@ -1,0 +1,206 @@
+---
+// /services/ ("Our Work") — Elementor template post-108 plus the JetEngine
+// loop item post-105, which is a flip box per portfolio entry.
+//
+//   #7ab586e  title row   margin-top 150px (120px <=767)
+//   #cb8d256  title       Titillium 40/40 600 uppercase #808080
+//   #04cfd34  grid row    margin 50px 0
+//   #d55de09  grid        3 x 370px, 5px gaps (2 cols <=1024, 1 <=767)
+//   #460f684  flip box    370x280, effect "fade" (not a flip)
+//               front  the featured image, cover center, opacity 1 -> 0
+//               back   same image under rgba(58,58,58,0.78), opacity 0 -> 1
+//                      title 21/21 600, tags 14/21 400, ghost button 2px #fff
+import Base from '../layouts/Base.astro';
+import { media } from '../consts';
+import { PORTFOLIO } from '../data/portfolio';
+
+export const prerender = true;
+
+const CATEGORY_HREF: Record<string, string> = {
+  Exterior: '/category/exterior/',
+  Interior: '/category/interior/',
+};
+---
+
+<Base
+  title="Our Work – BolDe Imaging"
+  description="Signage projects by BolDe Imaging: wayfinding, pylon, push thru, interiors, hoarding, cut out letters, awnings, fascia, custom signage, channel letters and banners."
+>
+  <section class="title-row page-top">
+    <div class="container">
+      <div class="title-col">
+        <h1 class="page-title">Our Work</h1>
+      </div>
+    </div>
+  </section>
+
+  <section class="grid-row">
+    <div class="container">
+      <div class="grid-col">
+        <div class="grid">
+          {
+            PORTFOLIO.map((item) => (
+              <article class="flip-box">
+                <div class="flip-box__front" style={`background-image:url('${media(item.grid)}')`}></div>
+                <div class="flip-box__back" style={`background-image:url('${media(item.grid)}')`}>
+                  <div class="flip-box__overlay">
+                    <div class="flip-box__inner">
+                      <h3 class="flip-box__title">{item.title}</h3>
+                      <div class="flip-box__desc">
+                        {
+                          item.categories.map((name, i) => (
+                            <>
+                              {i > 0 && ', '}
+                              <a href={CATEGORY_HREF[name] ?? '/'} rel="tag">
+                                {name}
+                              </a>
+                            </>
+                          ))
+                        }
+                      </div>
+                      <a class="flip-box__button" href={`/portfolio/${item.slug}/`}>Read More</a>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            ))
+          }
+        </div>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .title-col,
+  .grid-col {
+    padding: 10px;
+  }
+
+  .grid-row {
+    margin: 50px 0;
+  }
+
+  /* #d55de09 */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 5px;
+  }
+
+  /* #460f684 */
+  .flip-box {
+    position: relative;
+    height: 280px;
+    overflow: hidden;
+  }
+
+  .flip-box__front,
+  .flip-box__back {
+    position: absolute;
+    inset: 0;
+    background-position: 50% 50%;
+    background-size: cover;
+    background-repeat: no-repeat;
+    transition: 0.6s ease-in-out;
+  }
+
+  .flip-box__front {
+    opacity: 1;
+  }
+
+  /* Elementor's default back-layer colour shows through wherever the image
+     does not cover — kept rather than tidied away. */
+  .flip-box__back {
+    background-color: #4054b2;
+    opacity: 0;
+  }
+
+  .flip-box:hover .flip-box__front,
+  .flip-box:focus-within .flip-box__front {
+    opacity: 0;
+  }
+
+  .flip-box:hover .flip-box__back,
+  .flip-box:focus-within .flip-box__back {
+    opacity: 1;
+  }
+
+  .flip-box__overlay {
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    height: 100%;
+    padding: 35px;
+    background-color: rgba(58, 58, 58, 0.78);
+    color: #fff;
+    text-align: center;
+  }
+
+  .flip-box__inner {
+    align-self: center;
+    width: 100%;
+  }
+
+  .flip-box__title {
+    margin: 0 0 20px;
+    font-family: var(--font-body);
+    font-size: 21px;
+    line-height: 21px;
+    font-weight: 600;
+    color: #fff;
+  }
+
+  .flip-box__desc {
+    margin: 0 0 20px;
+    font-family: var(--font-body);
+    font-size: 14px;
+    line-height: 21px;
+    font-weight: 400;
+    color: #fff;
+  }
+
+  /* The site's own custom CSS on this widget forces the tag links white. */
+  .flip-box__desc a {
+    color: #fff !important;
+  }
+
+  .flip-box__button {
+    display: inline-block;
+    padding: 12px 24px;
+    border: 2px solid #fff;
+    border-radius: 3px;
+    background-color: transparent;
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 15px;
+    font-weight: 500;
+    color: #fff;
+    text-align: center;
+    transition: 0.3s;
+  }
+
+  .flip-box__button:hover,
+  .flip-box__button:focus {
+    background-color: rgba(255, 255, 255, 0.15);
+    color: #fff;
+  }
+
+  @media (max-width: 1024px) {
+    .grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 767px) {
+    .grid {
+      grid-template-columns: 1fr;
+    }
+  }
+  /* The page title centres at the tablet breakpoint on this template. */
+  @media (max-width: 1024px) {
+    .page-title {
+      text-align: center;
+    }
+  }
+</style>

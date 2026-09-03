@@ -1,0 +1,349 @@
+---
+// Footer — ported from Elementor template post-73 ("footer" location).
+//
+//   #6cbb68c  upper band     bg #3A3A3A, padding 30px 0 (20px <=1024/767)
+//   #34b0fb1  left column    52.895%  — "HEAD OFFICE" + contact icon list
+//   #2f5d879  right column   47.061%  — social icons + the four-item menu
+//   #3a685c4  heading        Titillium 20px/400, brand blue (25px <=767)
+//   #b62f87b  icon list      Titillium 17px/400 white, 19px icons (20px <=767)
+//   #2401ef3  social icons   20px in #018BE3 circles (26px <=767)
+//   #b4acba5  footer menu    Titillium 600 #BCBCBC, white on hover
+//   #4595684  lower band     bg #303030
+//   #8bcf6a7  copyright      Titillium 13px/400 white, centred (20px <=1024, 18px <=767)
+import { NAV, SITE } from '../consts';
+
+const { path } = Astro.props as { path: string };
+const isCurrent = (href: string) => path === href;
+---
+
+<footer class="site-footer">
+  <section class="upper">
+    <div class="container upper__inner">
+      <div class="col col--office">
+        <h2 class="office-title">HEAD OFFICE</h2>
+        <ul class="office-list">
+          <li>
+            <a href={SITE.phoneHref}>
+              <span class="icon"><i class="fas fa-phone-volume" aria-hidden="true"></i></span>
+              <span class="text">{SITE.phone} </span>
+            </a>
+          </li>
+          <li>
+            <a href={`mailto:${SITE.email}`}>
+              <span class="icon"><i class="fas fa-envelope" aria-hidden="true"></i></span>
+              <span class="text">{SITE.email}</span>
+            </a>
+          </li>
+          <li>
+            <a href={SITE.mapsUrl} target="_blank" rel="noopener">
+              <span class="icon"><i class="fas fa-location-arrow" aria-hidden="true"></i></span>
+              <span class="text">{SITE.address}</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <div class="col col--social">
+        <div class="social" role="list">
+          <span role="listitem">
+            <a class="social__icon" href={SITE.facebook} target="_blank" rel="noopener">
+              <span class="screen-reader-text">Facebook</span>
+              <i class="fab fa-facebook" aria-hidden="true"></i>
+            </a>
+          </span>
+          <span role="listitem">
+            <a class="social__icon" href={SITE.instagram} target="_blank" rel="noopener">
+              <span class="screen-reader-text">Instagram</span>
+              <i class="fab fa-instagram" aria-hidden="true"></i>
+            </a>
+          </span>
+        </div>
+
+        <nav class="footer-nav" aria-label="Menu">
+          <ul>
+            {
+              NAV.map((item) => (
+                <li>
+                  <a
+                    href={item.href}
+                    class:list={['footer-nav__item', { 'footer-nav__item--active': isCurrent(item.href) }]}
+                    aria-current={isCurrent(item.href) ? 'page' : undefined}
+                  >
+                    <span class="footer-nav__inner">
+                      <i class={`fa ${item.icon}`} aria-hidden="true"></i>
+                      <br />
+                      {item.label}
+                    </span>
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+        </nav>
+      </div>
+    </div>
+  </section>
+
+  <section class="lower">
+    <div class="container">
+      <p class="copyright">{SITE.copyright}</p>
+    </div>
+  </section>
+</footer>
+
+<style>
+  /* #6cbb68c */
+  .upper {
+    padding: 30px 0;
+    background-color: var(--e-global-color-2ad1353);
+  }
+
+  .upper__inner {
+    display: flex;
+  }
+
+  /* #34b0fb1 / #2f5d879 — the columns stretch; each one centres its own
+     content vertically (align-items:center on the widget wrap). */
+  .col {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .col--office {
+    width: 52.895%;
+  }
+
+  .col--social {
+    width: 47.061%;
+  }
+
+  /* #3a685c4 — 20px/20px, no margin: the 20px gap below comes from the kit's
+     widget spacing, not from the heading. */
+  .office-title {
+    margin: 0 0 20px;
+    font-family: var(--font-body);
+    font-size: 20px;
+    line-height: 20px;
+    font-weight: 400;
+    color: var(--e-global-color-6ad8614);
+  }
+
+  /* #b62f87b */
+  .office-list {
+    --icon-size: 19px;
+  }
+
+  .office-list li {
+    display: flex;
+    align-items: center;
+  }
+
+  .office-list li:not(:last-child) {
+    padding-block-end: 1.5px; /* calc(3px/2) */
+  }
+
+  .office-list li:not(:first-child) {
+    margin-block-start: 1.5px;
+  }
+
+  .office-list a {
+    display: flex;
+    align-items: center;
+    font-family: var(--font-body);
+    font-size: 17px;
+    font-weight: 400;
+    color: #fff;
+  }
+
+  .office-list .icon {
+    display: flex;
+    flex-shrink: 0;
+    color: #fff;
+    transition: color 0.3s;
+  }
+
+  .office-list .icon i {
+    width: 1.25em;
+    font-size: var(--icon-size);
+    text-align: center;
+  }
+
+  .office-list .text {
+    padding-inline-start: 5px;
+    color: #fff;
+    transition: color 0.3s;
+  }
+
+  .office-list li:hover .text,
+  .office-list li:hover .icon {
+    color: var(--e-global-color-6ad8614);
+  }
+
+  /* #2401ef3 */
+  .social {
+    display: flex;
+    justify-content: center;
+    gap: 0 10px;
+    margin-block-end: 20px;
+  }
+
+  .social__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2em;
+    height: 2em;
+    border-radius: 50%;
+    background-color: #018be3;
+    font-size: 20px;
+    line-height: 1;
+    color: #fff;
+    text-align: center;
+  }
+
+  .social__icon:hover {
+    background-color: var(--e-global-color-text);
+    color: #fff;
+  }
+
+  /* #b4acba5 */
+  .footer-nav > ul {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .footer-nav > ul > li {
+    display: flex;
+    position: relative;
+  }
+
+  .footer-nav__item {
+    display: flex;
+    position: relative;
+    align-items: center;
+    padding: 13px 20px;
+    font-family: var(--font-body);
+    line-height: 20px;
+    font-weight: 600;
+    color: var(--footer-nav);
+    fill: var(--footer-nav);
+  }
+
+  .footer-nav__inner {
+    display: block;
+    text-align: center;
+  }
+
+  .footer-nav__item:hover,
+  .footer-nav__item:focus {
+    color: #fff;
+  }
+
+  .footer-nav__item--active {
+    color: var(--e-global-color-6ad8614);
+  }
+
+  .footer-nav__item::after {
+    content: '';
+    position: absolute;
+    inset-block-end: 0;
+    inset-inline-start: 0;
+    width: 100%;
+    height: 3px;
+    background-color: var(--e-global-color-6ad8614);
+    opacity: 0;
+    transition: 0.3s cubic-bezier(0.58, 0.3, 0.005, 1);
+  }
+
+  .footer-nav__item:hover::after,
+  .footer-nav__item:focus::after,
+  .footer-nav__item--active::after {
+    opacity: 1;
+  }
+
+  /* #4595684 + #8bcf6a7 */
+  .lower {
+    background-color: var(--band-copyright);
+  }
+
+  /* Elementor's default column padding is the 10px that makes this bar 33px
+     tall on the original. */
+  .lower .container {
+    padding: 10px;
+  }
+
+  .copyright {
+    margin: 0;
+    font-family: var(--font-body);
+    font-size: 13px;
+    line-height: 13px;
+    font-weight: 400;
+    color: #fff;
+    text-align: center;
+  }
+
+  @media (max-width: 1024px) {
+    .upper {
+      padding: 20px;
+    }
+
+    .col--office {
+      padding: 10px;
+    }
+
+    .footer-nav__item {
+      padding-inline: 10px;
+    }
+
+    .copyright {
+      font-size: 20px;
+      line-height: 20px;
+    }
+  }
+
+  @media (max-width: 767px) {
+    .upper__inner {
+      flex-wrap: wrap;
+    }
+
+    .upper {
+      padding: 20px 0;
+    }
+
+    .col--office,
+    .col--social {
+      width: 100%;
+    }
+
+    .col--social {
+      margin: 0;
+      padding: 0;
+    }
+
+    .office-title {
+      font-size: 25px;
+      line-height: 25px;
+      text-align: center;
+    }
+
+    .office-list a {
+      font-size: 20px;
+    }
+
+    .social__icon {
+      font-size: 26px;
+    }
+
+    .footer-nav__item {
+      font-size: 16px;
+      padding-inline: 10px;
+    }
+
+    .copyright {
+      font-size: 18px;
+      line-height: 1.4em;
+    }
+  }
+</style>

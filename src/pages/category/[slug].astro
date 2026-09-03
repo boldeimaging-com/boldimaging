@@ -1,0 +1,29 @@
+---
+// /category/exterior/ and /category/interior/.
+//
+// These are the two addresses the "Our Work" flip boxes link to, and on the
+// live site they are empty: the portfolio custom post type is not in the
+// category archive loop, so WordPress renders the theme's page header and an
+// empty `.page-content`. Ported as-is -- an empty archive is what the links
+// currently reach, and inventing a listing here would be a redesign, not a
+// port. Worth raising with the client separately.
+import Base from '../../layouts/Base.astro';
+import ThemeArchive from '../../components/ThemeArchive.astro';
+
+export const prerender = true;
+
+export function getStaticPaths() {
+  return [
+    { params: { slug: 'exterior' }, props: { name: 'Exterior' } },
+    { params: { slug: 'interior' }, props: { name: 'Interior' } },
+  ];
+}
+
+const { name } = Astro.props as { name: string };
+---
+
+<Base title={`${name} – BolDe Imaging`}>
+  <ThemeArchive>
+    <Fragment slot="heading">Category: <span>{name}</span></Fragment>
+  </ThemeArchive>
+</Base>

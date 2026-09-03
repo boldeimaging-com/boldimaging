@@ -1,0 +1,369 @@
+---
+// /contact/ — Elementor template post-128.
+//
+//   #32c811a  title row    margin-top 150px (120px <=767)
+//   #4b322fe  title        Titillium 40/40 600 uppercase #808080
+//   #41b7475  intro        Titillium 18/27 400 #7A7A7A (centred <=1024)
+//   #a2e672c  form row     columns 35% map / 65% form (the form column pads 20px)
+//   #53524e0  map          Google Maps embed, iframe height 540px (220 <=767)
+//   #7bc7513  form         labels Titillium 400 #7A7A7A, fields Open Sans 15px
+//                          on #fff with a 1px #69727D border, 10px column gap
+//                          and 16px row gap, submit #00AEEF full width
+//   #0aea938  careers row  margin 50px 0
+//   #b07e932  "Careers."   Titillium 32/32 600 #808080
+//
+// The form posts to /api/contact — see README: delivery is wired at gate 11 of
+// the migration and the endpoint answers 503 until it is configured.
+import Base from '../layouts/Base.astro';
+import { SITE } from '../consts';
+
+export const prerender = true;
+
+const MAP_SRC =
+  'https://maps.google.com/maps?q=BolDe%20Imaging%20Group%2C%205648%20McAdam%20Rd%2C%20Mississauga%2C%20ON%20L4Z%201T2&t=m&z=11&output=embed&iwloc=near';
+---
+
+<Base
+  title="Contact – BolDe Imaging"
+  description={`Get in touch with BolDe Imaging — ${SITE.phone}, ${SITE.email}, ${SITE.address}.`}
+>
+  <section class="title-row page-top">
+    <div class="container">
+      <div class="pad">
+        <h1 class="page-title">Get In Touch</h1>
+      </div>
+    </div>
+  </section>
+
+  <section class="intro-row">
+    <div class="container">
+      <div class="pad">
+        <div class="intro">
+          <p>
+            If you have any questions, comments, or would like to request a quote, please fill out
+            the form below. For file upload, please click on the yellow ‘FTP’ tab at the top of the
+            page.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="form-row">
+    <div class="container form-row__inner">
+      <div class="col col--map">
+        <iframe
+          class="map"
+          src={MAP_SRC}
+          title="BolDe Imaging Group on Google Maps"
+          loading="lazy"
+          referrerpolicy="no-referrer-when-downgrade"></iframe>
+      </div>
+
+      <div class="col col--form">
+        <form class="eform" id="contact-form" method="post" action="/api/contact/" enctype="multipart/form-data">
+          <div class="eform__fields">
+            <div class="eform__group eform__group--half">
+              <label for="c-name">First Name *</label>
+              <input type="text" id="c-name" name="name" placeholder="Name" required />
+            </div>
+            <div class="eform__group eform__group--half">
+              <label for="c-last">Last Name</label>
+              <input type="text" id="c-last" name="last_name" />
+            </div>
+            <div class="eform__group eform__group--half">
+              <label for="c-email">Email</label>
+              <input type="email" id="c-email" name="email" placeholder="Email" />
+            </div>
+            <div class="eform__group eform__group--half">
+              <label for="c-email2">Confirm Email</label>
+              <input type="email" id="c-email2" name="confirm_email" />
+            </div>
+            <div class="eform__group">
+              <label for="c-website">Website</label>
+              <input type="url" id="c-website" name="website" />
+            </div>
+            <div class="eform__group">
+              <label for="c-message">Message</label>
+              <textarea id="c-message" name="message" rows="4" placeholder="Message"></textarea>
+            </div>
+            <div class="eform__group">
+              <label for="c-file">
+                Attach (Max File Size 10 MB. For resumes only - please upload all production files
+                through form located on FTP page, accessible by clicking the yellow FTP tab at the
+                top of page)
+              </label>
+              <input type="file" id="c-file" name="attachment" />
+            </div>
+            <div class="eform__group">
+              <button class="eform__submit" type="submit">
+                <span>Submit</span>
+              </button>
+            </div>
+          </div>
+          <p class="eform__message" id="contact-message" role="status" hidden></p>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <section class="careers-row">
+    <div class="container">
+      <div class="pad">
+        <h2 class="careers-title">Careers.</h2>
+        <div class="careers-copy">
+          <p>
+            When it comes to fabrication and installation, good help is hard to find! Please contact
+            us with a resume and cover letter if you are interested in becoming a part of the BolDe
+            team. Onsite training is available.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .pad {
+    padding: 10px;
+  }
+
+  .intro {
+    /* flow-root keeps the trailing paragraph margin inside the box, which is
+       how Elementor's widget container measures on the original. */
+    display: flow-root;
+
+    font-family: var(--font-body);
+    font-size: 18px;
+    line-height: 27px;
+    font-weight: 400;
+    color: var(--e-global-color-text);
+  }
+
+  .intro p {
+    margin: 0 0 14.4px;
+  }
+
+  .form-row__inner {
+    display: flex;
+  }
+
+  .col--map {
+    width: 35%;
+    padding: 10px; /* Elementor's default column padding */
+  }
+
+  .col--form {
+    width: 65%;
+    padding: 20px;
+  }
+
+  .map {
+    display: block;
+    width: 100%;
+    height: 540px;
+    border: 0;
+  }
+
+  /* #7bc7513 — Elementor's form widget: a wrapper with negative gutters and
+     each group padded by half the 10px column gap. */
+  .eform__fields {
+    display: flex;
+    flex-wrap: wrap;
+    margin-inline: -5px;
+    margin-block-end: -16px;
+  }
+
+  .eform__group {
+    flex: 1 1 100%;
+    max-width: 100%;
+    padding-inline: 5px;
+    margin-block-end: 16px;
+  }
+
+  .eform__group--half {
+    flex-basis: 50%;
+    max-width: 50%;
+  }
+
+  .eform__group > label {
+    display: block;
+    padding-block-end: 0;
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1;
+    font-weight: 400;
+    color: var(--e-global-color-text);
+  }
+
+  .eform__group input:not([type='file']),
+  .eform__group textarea {
+    width: 100%;
+    min-height: 40px;
+    padding: 8px 16px;
+    border: 1px solid #69727d;
+    border-radius: 3px;
+    background-color: #fff;
+    font-family: var(--font-field);
+    font-size: 15px;
+    line-height: 21px;
+    font-weight: 400;
+    color: var(--e-global-color-text);
+  }
+
+  .eform__group textarea {
+    padding: 5px 14px;
+    resize: vertical;
+  }
+
+  .eform__group input[type='file'] {
+    display: block;
+    width: 100%;
+    background-color: #fff;
+    font-family: var(--font-field);
+    color: var(--e-global-color-text);
+  }
+
+  .eform__submit {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 40px;
+    padding: 0 24px;
+    border: 0;
+    border-radius: 3px;
+    background-color: var(--cyan);
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 15px;
+    font-weight: 500;
+    color: #fff;
+    text-align: center;
+    cursor: pointer;
+  }
+
+  .eform__submit:hover,
+  .eform__submit:focus {
+    color: #fff;
+  }
+
+  .eform__message {
+    margin: 10px 0 0;
+    font-family: var(--font-body);
+    font-size: 16px;
+    color: var(--e-global-color-text);
+  }
+
+  .eform__message[data-state='error'] {
+    color: var(--required-red);
+  }
+
+  /* #0aea938 */
+  .careers-row {
+    margin: 50px 0;
+  }
+
+  .careers-title {
+    margin: 0 0 20px;
+    font-family: var(--font-body);
+    font-size: 32px;
+    line-height: 32px;
+    font-weight: 600;
+    color: var(--page-title-grey);
+  }
+
+  .careers-copy {
+    /* flow-root keeps the trailing paragraph margin inside the box, which is
+       how Elementor's widget container measures on the original. */
+    display: flow-root;
+
+    font-family: var(--font-body);
+    font-size: 18px;
+    line-height: 27px;
+    font-weight: 400;
+    color: var(--e-global-color-text);
+  }
+
+  .careers-copy p {
+    margin: 0 0 14.4px;
+  }
+
+  @media (max-width: 1024px) {
+    .intro {
+      text-align: center;
+    }
+  }
+
+  @media (max-width: 767px) {
+    .form-row__inner {
+      flex-wrap: wrap;
+    }
+
+    .col--map,
+    .col--form {
+      width: 100%;
+    }
+
+    .map {
+      height: 220px;
+    }
+
+    .eform__group--half {
+      flex-basis: 100%;
+      max-width: 100%;
+    }
+
+    .careers-title,
+    .careers-copy {
+      text-align: center;
+    }
+  }
+  /* The page title centres at the tablet breakpoint on this template. */
+  @media (max-width: 1024px) {
+    .page-title {
+      text-align: center;
+    }
+  }
+</style>
+
+<script is:inline>
+  (function () {
+    var form = document.getElementById('contact-form');
+    var out = document.getElementById('contact-message');
+    if (!form || !out) return;
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      var email = form.querySelector('#c-email');
+      var confirm = form.querySelector('#c-email2');
+      if (email.value && confirm.value && email.value !== confirm.value) {
+        out.hidden = false;
+        out.setAttribute('data-state', 'error');
+        out.textContent = 'The two email addresses do not match.';
+        return;
+      }
+      var btn = form.querySelector('.eform__submit');
+      btn.disabled = true;
+      out.hidden = false;
+      out.removeAttribute('data-state');
+      out.textContent = 'Sending…';
+      try {
+        var res = await fetch(form.action, { method: 'POST', body: new FormData(form) });
+        var data = await res.json().catch(function () {
+          return {};
+        });
+        if (res.ok) {
+          out.textContent = data.message || 'Thanks — your message was sent.';
+          form.reset();
+        } else {
+          out.setAttribute('data-state', 'error');
+          out.textContent = data.message || 'Sorry, that could not be sent. Please try again.';
+        }
+      } catch (err) {
+        out.setAttribute('data-state', 'error');
+        out.textContent = 'Sorry, that could not be sent. Please try again.';
+      }
+      btn.disabled = false;
+    });
+  })();
+</script>

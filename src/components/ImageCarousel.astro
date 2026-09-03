@@ -1,0 +1,178 @@
+---
+// "Project Galleries" — Elementor image carousel #ad7bb01.
+//
+// Real Swiper params on the live site: slidesPerView 3, spaceBetween 10,
+// speed 500, autoplay delay 5000, disableOnInteraction true (so the autoplay
+// stops for good once someone clicks an arrow), pauseOnMouseEnter false,
+// loop true. Arrows sit outside the track, 23px, white.
+import { media } from '../consts';
+import type { Img } from '../data/home';
+
+const { images } = Astro.props as { images: Img[] };
+---
+
+<div class="carousel">
+  <button class="carousel__arrow carousel__arrow--prev" type="button" data-prev aria-label="Previous">
+    <i class="eicon-chevron-left" aria-hidden="true"></i>
+  </button>
+
+  <div class="carousel__viewport" data-viewport>
+    <div class="carousel__track" data-track>
+      {
+        images.map((img) => (
+          <figure class="carousel__slide">
+            <img
+              src={media(img.src)}
+              width={img.w}
+              height={img.h}
+              alt={img.alt}
+              loading="lazy"
+              decoding="async"
+            />
+          </figure>
+        ))
+      }
+    </div>
+  </div>
+
+  <button class="carousel__arrow carousel__arrow--next" type="button" data-next aria-label="Next">
+    <i class="eicon-chevron-right" aria-hidden="true"></i>
+  </button>
+</div>
+
+<style>
+  .carousel {
+    position: relative;
+  }
+
+  /* arrows_position: outside — the track is inset 30px on each side */
+  .carousel__viewport {
+    margin-inline: 30px;
+    overflow: hidden;
+  }
+
+  .carousel__track {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: transform 500ms ease;
+  }
+
+  .carousel__slide {
+    flex: 0 0 calc((100% - 20px) / 3);
+    margin: 0;
+  }
+
+  /* Left inline, like the original: the descender space under an inline
+     image is what makes each slide 7px taller than the picture itself. */
+  .carousel__slide img {
+    width: 100%;
+    height: auto;
+  }
+
+  .carousel__arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    font-size: 23px;
+    line-height: 1;
+    color: #fff;
+    cursor: pointer;
+  }
+
+  .carousel__arrow--prev {
+    inset-inline-start: 0;
+  }
+
+  .carousel__arrow--next {
+    inset-inline-end: 0;
+  }
+
+  /* Elementor's image-carousel defaults: 2 per view on tablet, 1 on mobile
+     (the widget sets no override of its own). */
+  @media (max-width: 1024px) {
+    .carousel__slide {
+      flex-basis: calc((100% - 10px) / 2);
+    }
+  }
+
+  @media (max-width: 767px) {
+    .carousel__slide {
+      flex-basis: 100%;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .carousel__track {
+      transition: none;
+    }
+  }
+</style>
+
+<script is:inline>
+  (function () {
+    var roots = document.querySelectorAll('.carousel');
+    Array.prototype.forEach.call(roots, function (root) {
+      if (root.dataset.bound) return;
+      root.dataset.bound = '1';
+      var track = root.querySelector('[data-track]');
+      var viewport = root.querySelector('[data-viewport]');
+      var slides = track.children;
+      var index = 0;
+      var timer = null;
+
+      function perView() {
+        var slide = slides[0];
+        if (!slide) return 1;
+        var step = slide.getBoundingClientRect().width + 10;
+        return Math.max(1, Math.round(viewport.clientWidth / step));
+      }
+
+      function maxIndex() {
+        return Math.max(0, slides.length - perView());
+      }
+
+      function go(i) {
+        var max = maxIndex();
+        index = i > max ? 0 : i < 0 ? max : i;
+        var slide = slides[0];
+        var step = slide ? slide.getBoundingClientRect().width + 10 : 0;
+        track.style.transform = 'translateX(' + -(index * step) + 'px)';
+      }
+
+      function start() {
+        stop();
+        timer = setInterval(function () {
+          go(index + 1);
+        }, 5000);
+      }
+
+      function stop() {
+        if (timer) clearInterval(timer);
+        timer = null;
+      }
+
+      root.querySelector('[data-prev]').addEventListener('click', function () {
+        stop(); // disableOnInteraction: true
+        go(index - 1);
+      });
+      root.querySelector('[data-next]').addEventListener('click', function () {
+        stop();
+        go(index + 1);
+      });
+
+      window.addEventListener('resize', function () {
+        go(Math.min(index, maxIndex()));
+      });
+
+      go(0);
+      if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) start();
+    });
+  })();
+</script>

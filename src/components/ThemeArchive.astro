@@ -1,0 +1,83 @@
+---
+// The bare hello-elementor archive/404 shell: `main.site-main` holding a
+// `.page-header > h1.entry-title` and a `.page-content`.
+//
+// Nothing else is on these pages on the live site, and the heading really does
+// sit at the very top under the fixed header -- the kit's
+// `h1.entry-title { display: var(--page-title-display) }` has no value to
+// resolve outside the Elementor templates, so the theme's own layout stands.
+// Reproduced as-is rather than "fixed".
+interface Props {
+  heading?: string;
+}
+const { heading } = Astro.props as Props;
+---
+
+<main class="site-main" id="content">
+  <div class="page-header">
+    <h1 class="entry-title">
+      {heading ? heading : <slot name="heading" />}
+    </h1>
+  </div>
+  <div class="page-content">
+    <slot />
+  </div>
+</main>
+
+<style>
+  /* hello-elementor's container ladder, verbatim (theme.css). */
+  .site-main,
+  .entry-title {
+    width: 100%;
+    margin-inline: auto;
+  }
+
+  @media (max-width: 575px) {
+    .site-main,
+    .entry-title {
+      padding-inline: 10px;
+    }
+  }
+
+  @media (min-width: 576px) {
+    .site-main,
+    .entry-title {
+      max-width: 500px;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .site-main,
+    .entry-title {
+      max-width: 600px;
+    }
+  }
+
+  @media (min-width: 992px) {
+    .site-main,
+    .entry-title {
+      max-width: 800px;
+    }
+  }
+
+  @media (min-width: 1200px) {
+    .site-main,
+    .entry-title {
+      max-width: 1140px;
+    }
+  }
+
+  .entry-title {
+    margin: 8px 0 16px;
+    font-family: var(--font-theme);
+    font-size: 40px;
+    line-height: 48px;
+    font-weight: 500;
+    color: #333;
+  }
+
+  /* hello-elementor: .page-content a { text-decoration: underline } */
+  .page-content :global(a) {
+    text-decoration: underline;
+  }
+</style>

@@ -1,0 +1,318 @@
+---
+// /ftp/ — Elementor template post-122 wrapping a JetFormBuilder form.
+//
+//   #9d4d9b6  title row   margin-top 150px (120px <=767)
+//   #528a996  title       Titillium 40/40 600 uppercase #808080
+//   #aa99a0b  intro       Titillium 18/27 400 #7A7A7A (20px/1.4em <=767)
+//   #f001d57  form        rows are flex; label column is a hard 30%,
+//                         field column takes the rest (784px at 1600)
+//                         required marker #FF0A0A, fields 1px #666 / r3 / #fff,
+//                         the select is #EFEFEF, submit is the theme's ghost
+//                         button (1px #c36) rather than a filled one
+//
+// The form posts to /api/ftp — see README: delivery is wired at gate 11 of the
+// migration and the endpoint answers 503 until it is configured.
+import Base from '../layouts/Base.astro';
+
+export const prerender = true;
+
+const REPS = [
+  { email: 'joe@boldeimaging.com', name: 'Joe Husami' },
+  { email: 'tony.r@boldeimaging.com', name: 'Tony Roy' },
+  { email: 'ed@boldeimaging.com', name: 'Ed Pawluk' },
+  { email: 'mo@boldeimaging.com', name: 'Mo Husami' },
+  { email: 'dan@boldeimaging.com', name: 'Dan Lethbridge' },
+  { email: 'jarrod@boldeimaging.com', name: 'Jarrod Hickey' },
+  { email: 'suzy@boldeimaging.com', name: 'Suzy Costa' },
+];
+---
+
+<Base
+  title="FTP – BolDe Imaging"
+  description="Upload production files to BolDe Imaging along with the details your rep needs."
+>
+  <section class="title-row page-top">
+    <div class="container">
+      <div class="pad">
+        <h1 class="page-title">File Upload</h1>
+      </div>
+    </div>
+  </section>
+
+  <section class="intro-row">
+    <div class="container">
+      <div class="pad">
+        <div class="intro">
+          <p>
+            Please use the following form to submit any files for production along with the required
+            information. If you’re looking for a quote or to submit a resume please reach out to us
+            through the Contact page, accessible by clicking the black Contact button on the top menu.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="form-row">
+    <div class="container">
+      <div class="pad">
+        <form class="jform" id="ftp-form" method="post" action="/api/ftp/" enctype="multipart/form-data">
+          <div class="jform__row">
+            <div class="jform__label-col">
+              <label class="jform__label" for="full_name">Full Name <span class="req">*</span></label>
+            </div>
+            <div class="jform__field-col">
+              <input class="jform__field" type="text" id="full_name" name="full_name" required />
+            </div>
+          </div>
+
+          <div class="jform__row">
+            <div class="jform__label-col">
+              <label class="jform__label" for="your_email">Email <span class="req">*</span></label>
+            </div>
+            <div class="jform__field-col">
+              <input class="jform__field" type="email" id="your_email" name="your_email" required />
+            </div>
+          </div>
+
+          <div class="jform__row">
+            <div class="jform__label-col">
+              <label class="jform__label" for="your_task">Task Name <span class="req">*</span></label>
+            </div>
+            <div class="jform__field-col">
+              <input class="jform__field" type="text" id="your_task" name="your_task" required />
+            </div>
+          </div>
+
+          <div class="jform__row">
+            <div class="jform__label-col">
+              <label class="jform__label" for="your_rep">Your Rep <span class="req">*</span></label>
+            </div>
+            <div class="jform__field-col">
+              <select class="jform__field jform__select" id="your_rep" name="your_rep" required>
+                {REPS.map((rep) => <option value={rep.email}>{rep.name}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div class="jform__row">
+            <div class="jform__label-col">
+              <label class="jform__label" for="your_message">Message</label>
+            </div>
+            <div class="jform__field-col">
+              <textarea class="jform__field" id="your_message" name="your_message" rows="2"></textarea>
+            </div>
+          </div>
+
+          <div class="jform__row">
+            <div class="jform__label-col">
+              <label class="jform__label" for="your_files">Your Files <span class="req">*</span></label>
+            </div>
+            <div class="jform__field-col">
+              <input
+                class="jform__file"
+                type="file"
+                id="your_files"
+                name="your_files"
+                multiple
+                required
+              />
+              <div class="jform__note"><small>Maximum file size: 350 MB</small></div>
+            </div>
+          </div>
+
+          <div class="jform__row">
+            <button class="jform__submit" type="submit">Submit</button>
+          </div>
+
+          <p class="jform__message" id="ftp-message" role="status" hidden></p>
+        </form>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .pad {
+    padding: 10px;
+  }
+
+  .form-row {
+    margin-bottom: 50px;
+  }
+
+  .intro {
+    /* flow-root keeps the trailing paragraph margin inside the box, which is
+       how Elementor's widget container measures on the original. */
+    display: flow-root;
+
+    font-family: var(--font-body);
+    font-size: 18px;
+    line-height: 27px;
+    font-weight: 400;
+    color: var(--e-global-color-text);
+  }
+
+  .intro p {
+    margin: 0 0 14.4px;
+  }
+
+  /* #f001d57 */
+  .jform__row {
+    display: flex;
+    align-items: flex-start;
+    padding: 5px 0;
+  }
+
+  .jform__label-col {
+    flex: 0 0 30%;
+    max-width: 30%;
+  }
+
+  .jform__field-col {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .jform__label {
+    display: flex;
+    justify-content: flex-start;
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 24px;
+    color: #333;
+  }
+
+  .req {
+    color: var(--required-red);
+  }
+
+  .jform__field {
+    width: 100%;
+    padding: 8px 16px;
+    border: 1px solid #666;
+    border-radius: 3px;
+    background-color: #fff;
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 24px;
+    color: #000;
+  }
+
+  .jform__select {
+    display: block;
+    background-color: #efefef;
+  }
+
+  textarea.jform__field {
+    display: block;
+    resize: vertical;
+  }
+
+  .jform__file {
+    font-family: var(--font-body);
+  }
+
+  .jform__note {
+    margin-top: 4px;
+    color: #333;
+  }
+
+  .jform__submit {
+    display: flex;
+    justify-content: center;
+    padding: 8px 16px;
+    border: 1px solid #c36;
+    border-radius: 3px;
+    background-color: transparent;
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 24px;
+    color: #c36;
+    cursor: pointer;
+  }
+
+  .jform__submit:hover,
+  .jform__submit:focus {
+    color: #336;
+    border-color: #336;
+  }
+
+  .jform__message {
+    margin: 10px 0 0;
+    font-family: var(--font-body);
+    font-size: 16px;
+  }
+
+  .jform__message[data-state='error'] {
+    color: var(--required-red);
+  }
+
+  @media (max-width: 1024px) {
+    .intro-row,
+    .form-row {
+      padding: 10px;
+    }
+  }
+
+  @media (max-width: 767px) {
+    .title-row {
+      margin-bottom: 25px;
+    }
+
+    .intro {
+      font-size: 20px;
+      line-height: 1.4em;
+    }
+
+    /* The 30/70 label/field split holds at every width on the original --
+       the columns are not stacked on phones. */
+    .title-row .pad {
+      padding: 0 0 10px;
+    }
+
+    .intro-row .pad,
+    .form-row .pad {
+      padding: 0;
+    }
+  }
+  /* The page title centres at the tablet breakpoint on this template. */
+  @media (max-width: 1024px) {
+    .page-title {
+      text-align: center;
+    }
+  }
+</style>
+
+<script is:inline>
+  (function () {
+    var form = document.getElementById('ftp-form');
+    var out = document.getElementById('ftp-message');
+    if (!form || !out) return;
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      var btn = form.querySelector('.jform__submit');
+      btn.disabled = true;
+      out.hidden = false;
+      out.removeAttribute('data-state');
+      out.textContent = 'Uploading…';
+      try {
+        var res = await fetch(form.action, { method: 'POST', body: new FormData(form) });
+        var data = await res.json().catch(function () {
+          return {};
+        });
+        if (res.ok) {
+          out.textContent = data.message || 'Thanks — your files were sent.';
+          form.reset();
+        } else {
+          out.setAttribute('data-state', 'error');
+          out.textContent = data.message || 'Sorry, that could not be sent. Please try again.';
+        }
+      } catch (err) {
+        out.setAttribute('data-state', 'error');
+        out.textContent = 'Sorry, that could not be sent. Please try again.';
+      }
+      btn.disabled = false;
+    });
+  })();
+</script>

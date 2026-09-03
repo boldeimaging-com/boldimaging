@@ -1,0 +1,15 @@
+{
+  // `name` must match the Cloudflare Worker this repo deploys to, exactly, or
+  // the Workers Build fails.
+  "name": "boldimaging",
+  "compatibility_date": "2026-09-03",
+  "compatibility_flags": ["nodejs_compat"],
+  // @astrojs/cloudflare v14 supplies `main` and the assets directory itself
+  // (it writes the deploy-time config to dist/_worker.js/wrangler.json), so
+  // this file only carries what the adapter does not derive.
+  "assets": {
+    "binding": "ASSETS",
+    "not_found_handling": "404-page",
+    "html_handling": "auto-trailing-slash"
+  }
+}

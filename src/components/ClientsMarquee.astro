@@ -1,0 +1,101 @@
+---
+// "Our Great Clients" — Elementor image carousel #171c70d.
+//
+// Real Swiper params on the live site: slidesPerView 4, spaceBetween 100,
+// speed 5000, autoplay delay 0, loop true, pauseOnMouseEnter false. Delay 0
+// with a 5s transition is a continuously scrolling strip that advances one
+// logo every five seconds, so that is what this is: the list is rendered
+// twice and the track translated by half its width, which keeps the same
+// one-slide-per-5s cadence at every width. 2 per view below 768px.
+import { media } from '../consts';
+import type { Img } from '../data/home';
+
+const { images } = Astro.props as { images: Img[] };
+const duration = images.length * 5;
+---
+
+<div class="marquee" style={`--count:${images.length}; --duration:${duration}s`}>
+  <div class="marquee__track">
+    {
+      [0, 1].map((copy) =>
+        images.map((img) => (
+          <figure class="marquee__slide">
+            <img
+              src={media(img.src)}
+              width={img.w}
+              height={img.h}
+              alt={copy === 0 ? img.alt : ''}
+              aria-hidden={copy === 1 ? 'true' : undefined}
+              loading="lazy"
+              decoding="async"
+            />
+          </figure>
+        ))
+      )
+    }
+  </div>
+</div>
+
+<style>
+  .marquee {
+    /* Width of the carousel viewport, matching the Elementor column it sits
+       in: the boxed 1140px container, less the 15px column padding the kit
+       adds at 1024px and below. */
+    --carousel-w: min(100vw, 1140px);
+    --gap: 100px;
+    --per-view: 4;
+    overflow: hidden;
+  }
+
+  .marquee__track {
+    display: flex;
+    align-items: center;
+    gap: var(--gap);
+    width: max-content;
+    animation: marquee var(--duration) linear infinite;
+  }
+
+  .marquee__slide {
+    flex: 0 0 calc((var(--carousel-w) - var(--gap) * (var(--per-view) - 1)) / var(--per-view));
+    margin: 0;
+  }
+
+  /* Left inline, as on the original -- see ImageCarousel.astro. */
+  .marquee__slide img {
+    width: 100%;
+    height: auto;
+  }
+
+  @keyframes marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      /* half the track is one full copy of the list, plus the gap that
+         follows the last slide of that copy */
+      transform: translateX(calc(-50% - var(--gap) / 2));
+    }
+  }
+
+  @media (max-width: 1024px) {
+    .marquee {
+      --carousel-w: calc(min(100vw, 1024px) - 30px);
+    }
+  }
+
+  @media (max-width: 767px) {
+    .marquee {
+      --carousel-w: calc(100vw - 30px);
+      --per-view: 2;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .marquee__track {
+      animation: none;
+    }
+    .marquee {
+      overflow-x: auto;
+    }
+  }
+</style>

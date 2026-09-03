@@ -1,0 +1,113 @@
+/* Icon faces, copied byte-for-byte from the ones boldeimaging.com serves:
+   Font Awesome 5.15.3 Free (solid + brands) and Elementor's eicons 5.53.0.
+   Same fonts, same codepoints, so the glyphs render identically to the
+   original rather than approximately.
+
+   Font Awesome Free -- fonts under SIL OFL 1.1, https://fontawesome.com/license/free
+   eicons -- MIT, ships with Elementor.
+
+   Only the glyphs this site actually uses get a rule. The upstream stylesheets
+   declare ~1500 each; none of the rest is referenced by any page here. */
+
+@font-face {
+  font-family: 'Font Awesome 5 Free';
+  font-style: normal;
+  font-weight: 900;
+  font-display: block;
+  src: url('/fonts/fa-solid-900.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Font Awesome 5 Brands';
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url('/fonts/fa-brands-400.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: eicons;
+  font-style: normal;
+  font-weight: normal;
+  font-display: block;
+  src: url('/fonts/eicons.woff2') format('woff2');
+}
+
+.fa,
+.fas,
+.fab,
+[class^='eicon-'] {
+  display: inline-block;
+  font-style: normal;
+  font-variant: normal;
+  line-height: 1;
+  text-rendering: auto;
+  -webkit-font-smoothing: antialiased;
+}
+
+.fa,
+.fas {
+  font-family: 'Font Awesome 5 Free';
+  font-weight: 900;
+}
+
+.fab {
+  font-family: 'Font Awesome 5 Brands';
+  font-weight: 400;
+}
+
+[class^='eicon-'] {
+  font-family: eicons;
+  font-weight: normal;
+}
+
+/* --- solid --- */
+.fa-home::before {
+  content: '\f015';
+}
+.fa-wrench::before {
+  content: '\f0ad';
+}
+.fa-folder-open::before {
+  content: '\f07c';
+}
+.fa-envelope::before {
+  content: '\f0e0';
+}
+.fa-arrow-down::before {
+  content: '\f063';
+}
+.fa-phone-volume::before {
+  content: '\f2a0';
+}
+.fa-location-arrow::before {
+  content: '\f124';
+}
+.fa-angle-left::before {
+  content: '\f104';
+}
+.fa-angle-right::before {
+  content: '\f105';
+}
+
+/* --- brands --- */
+.fa-facebook::before {
+  content: '\f09a';
+}
+.fa-instagram::before {
+  content: '\f16d';
+}
+
+/* --- eicons --- */
+.eicon-chevron-left::before {
+  content: '\e87e';
+}
+.eicon-chevron-right::before {
+  content: '\e87d';
+}
+.eicon-menu-bar::before {
+  content: '\e816';
+}
+.eicon-close::before {
+  content: '\e87f';
+}

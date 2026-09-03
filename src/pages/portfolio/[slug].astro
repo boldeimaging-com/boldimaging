@@ -1,0 +1,250 @@
+---
+// /portfolio/<slug>/ — ported from Elementor template post-145 ("single-post").
+//
+//   #b93fd71  title row      margin-top 150px; two 50% columns
+//   #162534b  title          Titillium 40/40 600 uppercase #808080
+//   #e64d62d  post nav       labels Titillium 16/24 uppercase #7A7A7A,
+//                            titles 14/21 #54595F, arrows 30px #00AEEF,
+//                            1px #D5D8DC separator between the halves
+//   #fa4aa83  body row       margin 50px 0; columns 65% image / 35% copy
+//   #c5d5ef7  sub-heading    Titillium 32/32 600 #808080
+//   #5ddb51e  copy           Titillium 15/22.5 400 #7A7A7A
+import Base from '../../layouts/Base.astro';
+import { media } from '../../consts';
+import { PORTFOLIO } from '../../data/portfolio';
+
+export const prerender = true;
+
+export function getStaticPaths() {
+  return PORTFOLIO.map((item, i) => ({
+    params: { slug: item.slug },
+    props: {
+      item,
+      prev: i > 0 ? PORTFOLIO[i - 1] : null,
+      next: i < PORTFOLIO.length - 1 ? PORTFOLIO[i + 1] : null,
+    },
+  }));
+}
+
+const { item, prev, next } = Astro.props as {
+  item: (typeof PORTFOLIO)[number];
+  prev: (typeof PORTFOLIO)[number] | null;
+  next: (typeof PORTFOLIO)[number] | null;
+};
+---
+
+<Base title={`${item.title} – BolDe Imaging`} description={item.body || undefined}>
+  <section class="title-row page-top">
+    <div class="container title-row__inner">
+      <div class="half">
+        <h1 class="page-title">{item.title}</h1>
+      </div>
+      <div class="half">
+        <div class="post-nav" role="navigation" aria-label="Post Navigation">
+          <div class="post-nav__prev">
+            {
+              prev && (
+                <a href={`/portfolio/${prev.slug}/`} rel="prev">
+                  <span class="post-nav__arrow">
+                    <i class="fas fa-angle-left" aria-hidden="true"></i>
+                    <span class="screen-reader-text">Prev</span>
+                  </span>
+                  <span class="post-nav__text">
+                    <span class="post-nav__label">Previous</span>
+                    <span class="post-nav__title">{prev.title}</span>
+                  </span>
+                </a>
+              )
+            }
+          </div>
+          <div class="post-nav__sep-wrap"><div class="post-nav__sep"></div></div>
+          <div class="post-nav__next">
+            {
+              next && (
+                <a href={`/portfolio/${next.slug}/`} rel="next">
+                  <span class="post-nav__text">
+                    <span class="post-nav__label">Next</span>
+                    <span class="post-nav__title">{next.title}</span>
+                  </span>
+                  <span class="post-nav__arrow">
+                    <i class="fas fa-angle-right" aria-hidden="true"></i>
+                    <span class="screen-reader-text">Next</span>
+                  </span>
+                </a>
+              )
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="body-row">
+    <div class="container body-row__inner">
+      <div class="col col--image">
+        <img
+          src={media(item.image)}
+          width={item.imageWidth}
+          height={item.imageHeight}
+          alt=""
+          loading="eager"
+        />
+      </div>
+      <div class="col col--copy">
+        <h2 class="sub-heading">{item.title}</h2>
+        {item.body && <div class="copy"><p>{item.body}</p></div>}
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .title-row__inner,
+  .body-row__inner {
+    display: flex;
+  }
+
+  .half {
+    width: 50%;
+    padding: 10px;
+  }
+
+  .body-row {
+    margin: 50px 0;
+  }
+
+  .col {
+    padding: 10px;
+  }
+
+  .col--image {
+    width: 65%;
+  }
+
+  .col--copy {
+    width: 35%;
+  }
+
+  .col--image img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .sub-heading {
+    margin: 0 0 20px;
+    font-family: var(--font-body);
+    font-size: 32px;
+    line-height: 32px;
+    font-weight: 600;
+    color: var(--page-title-grey);
+  }
+
+  .copy {
+    /* flow-root keeps the trailing paragraph margin inside the box, which is
+       how Elementor's widget container measures on the original. */
+    display: flow-root;
+
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 22.5px;
+    font-weight: 400;
+    color: var(--e-global-color-text);
+  }
+
+  .copy p {
+    margin: 0 0 14.4px;
+  }
+
+  /* #e64d62d — Elementor's post navigation widget */
+  .post-nav {
+    display: flex;
+  }
+
+  .post-nav__prev,
+  .post-nav__next {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .post-nav__next {
+    text-align: end;
+  }
+
+  .post-nav a {
+    display: flex;
+    align-items: center;
+  }
+
+  .post-nav__next a {
+    justify-content: flex-end;
+  }
+
+  .post-nav__arrow {
+    display: flex;
+    flex-shrink: 0;
+    font-size: 30px;
+    line-height: 45px;
+    color: var(--cyan);
+  }
+
+  .post-nav__prev .post-nav__arrow {
+    margin-inline-end: 15px;
+  }
+
+  .post-nav__next .post-nav__arrow {
+    margin-inline-start: 15px;
+  }
+
+  .post-nav__label,
+  .post-nav__title {
+    display: block;
+    font-family: var(--font-body);
+    font-weight: 400;
+  }
+
+  .post-nav__label {
+    font-size: 16px;
+    line-height: 24px;
+    text-transform: uppercase;
+    color: var(--e-global-color-text);
+  }
+
+  .post-nav__title {
+    font-size: 14px;
+    line-height: 21px;
+    color: var(--e-global-color-secondary);
+  }
+
+  .post-nav__sep-wrap {
+    display: flex;
+    align-items: stretch;
+  }
+
+  .post-nav__sep {
+    width: 1px;
+    background-color: #d5d8dc;
+  }
+
+  @media (max-width: 767px) {
+    /* post-145 centres its title at the mobile breakpoint, not the tablet one. */
+    .page-title {
+      text-align: center;
+    }
+
+    .title-row {
+      margin-bottom: 25px;
+    }
+
+    .title-row__inner,
+    .body-row__inner {
+      flex-wrap: wrap;
+    }
+
+    .half,
+    .col--image,
+    .col--copy {
+      width: 100%;
+    }
+  }
+</style>

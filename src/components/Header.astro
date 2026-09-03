@@ -1,0 +1,386 @@
+---
+// Header — ported from Elementor template post-783 ("header" location).
+//
+// The bar is fixed and transparent at rest, sitting on top of the hero; the
+// site's own inline script adds `.scrolled` past 10px, which fades in a
+// translucent dark background, a blur and a shadow and shrinks the logo.
+//
+//   #c5d9b85  the bar          fixed, top 0, full width, bg #3A3A3A00, z-index 99
+//   #6e48603  left spacer      30% desktop / 20% <=767, empty on the live site
+//   #e8da42d  logo column      40% desktop / 50% <=767
+//   #1515183  logo widget      img width 22% (25% <=1024, 35% <=767), z-index 1
+//   #e91c528  nav column       30% desktop / 20% <=767
+//   #4a5ddf1  nav widget       align-end, burger from <=1024, underline pointer
+import { NAV, media } from '../consts';
+
+const { path } = Astro.props as { path: string };
+const isCurrent = (href: string) => path === href;
+---
+
+<header class="site-header">
+  <div class="bar sticky-header" id="site-header-bar">
+    <div class="col col--spacer"></div>
+
+    <div class="col col--logo">
+      <div class="logo">
+        <a href="/">
+          <img
+            src={media('2021/04/Bolde_logo_White.png')}
+            width="512"
+            height="512"
+            alt="Bolde Imaging Icon"
+            fetchpriority="high"
+          />
+        </a>
+      </div>
+    </div>
+
+    <div class="col col--nav">
+      <div class="nav-widget">
+        <nav class="main-nav" aria-label="Menu">
+          <ul>
+            {
+              NAV.map((item) => (
+                <li>
+                  <a
+                    href={item.href}
+                    class:list={['nav-item', { 'nav-item--active': isCurrent(item.href) }]}
+                    aria-current={isCurrent(item.href) ? 'page' : undefined}
+                  >
+                    <span class="nav-item__inner">
+                      <i class={`fa ${item.icon}`} aria-hidden="true"></i>
+                      <br />
+                      {item.label}
+                    </span>
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+        </nav>
+
+        <button
+          type="button"
+          class="menu-toggle"
+          id="menu-toggle"
+          aria-label="Menu Toggle"
+          aria-expanded="false"
+          aria-controls="mobile-nav"
+        >
+          <i class="eicon-menu-bar toggle-open" aria-hidden="true"></i>
+          <i class="eicon-close toggle-close" aria-hidden="true"></i>
+        </button>
+
+        <nav class="mobile-nav" id="mobile-nav" aria-label="Menu" hidden>
+          <ul>
+            {
+              NAV.map((item) => (
+                <li>
+                  <a
+                    href={item.href}
+                    class:list={['nav-item', { 'nav-item--active': isCurrent(item.href) }]}
+                    aria-current={isCurrent(item.href) ? 'page' : undefined}
+                  >
+                    <span class="nav-item__inner">
+                      <i class={`fa ${item.icon}`} aria-hidden="true"></i>
+                      <br />
+                      {item.label}
+                    </span>
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+        </nav>
+      </div>
+    </div>
+  </div>
+</header>
+
+<style>
+  /* The wrapper takes no space in flow — the bar inside it is fixed, exactly
+     as Elementor's sticky header behaves on the original. */
+  .site-header {
+    height: 0;
+  }
+
+  /* #c5d9b85 */
+  .bar {
+    position: fixed;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+    z-index: 99;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    width: 100%;
+    padding: 0;
+    background-color: #3a3a3a00;
+    /* the site's own custom CSS */
+    transition: background-color 0.5s ease;
+  }
+
+  .bar.scrolled {
+    background-color: rgba(58, 58, 58, 0.5);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(9px);
+    -webkit-backdrop-filter: blur(9px);
+  }
+
+  .col {
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+  }
+
+  /* #6e48603 / #e8da42d / #e91c528 — 30/40/30 above 767px, 20/50/20 below */
+  .col--spacer {
+    width: 30%;
+  }
+  .col--logo {
+    width: 40%;
+  }
+  .col--nav {
+    width: 30%;
+  }
+
+  /* #1515183 */
+  .logo {
+    z-index: 1;
+    text-align: center;
+  }
+
+  /* The <a> is what the logo percentage resolves against on the original:
+     it shrinks to fit, capped at the image's natural 512px. */
+  .logo a {
+    display: block;
+    max-width: 512px;
+    margin-inline: auto;
+  }
+
+  .logo img {
+    display: block;
+    width: 22%;
+    margin-inline: auto;
+    transition: max-width 0.5s ease;
+  }
+
+  .bar.scrolled .logo img {
+    max-width: 14%;
+  }
+
+  /* #4a5ddf1 */
+  .nav-widget {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .main-nav {
+    display: flex;
+  }
+
+  .main-nav > ul {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    margin-inline-start: auto;
+    padding: 0;
+    list-style: none;
+    z-index: 2;
+  }
+
+  .main-nav > ul > li {
+    display: flex;
+    position: relative;
+  }
+
+  /* The kit's calc(30px/2) lands on both the <li> and the <a> on the
+     original, so the gap between items is 30px, not 15px. */
+  .main-nav > ul > li:not(:last-child) {
+    margin-inline-end: 30px;
+  }
+
+  .nav-item {
+    display: flex;
+    position: relative;
+    align-items: center;
+    padding: 5px 8px;
+    font-family: var(--font-body);
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #fff;
+    fill: #fff;
+  }
+
+  .nav-item:hover,
+  .nav-item:focus {
+    color: #fff;
+  }
+
+  .nav-item__inner {
+    display: block;
+    text-align: center;
+  }
+
+  .nav-item__inner i {
+    font-size: 14px;
+  }
+
+  /* e--pointer-underline e--animation-fade: a 3px brand-blue bar that fades in
+     on hover and stays on for the current page. */
+  .main-nav .nav-item::after {
+    content: '';
+    position: absolute;
+    inset-block-end: 0;
+    inset-inline-start: 0;
+    width: 100%;
+    height: 3px;
+    background-color: var(--e-global-color-6ad8614);
+    opacity: 0;
+    transition: 0.3s cubic-bezier(0.58, 0.3, 0.005, 1);
+  }
+
+  .main-nav .nav-item:hover::after,
+  .main-nav .nav-item:focus::after,
+  .main-nav .nav-item--active::after {
+    opacity: 1;
+  }
+
+  /* Burger. Hidden above 1024px — the widget is set to
+     elementor-nav-menu--dropdown-tablet on the original. */
+  .menu-toggle {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    margin-inline-start: auto;
+    padding: 0.25em;
+    border: 0;
+    border-radius: 3px;
+    background-color: var(--e-global-color-2ad1353);
+    color: #fff;
+    cursor: pointer;
+    line-height: 1;
+  }
+
+  .menu-toggle:hover,
+  .menu-toggle:focus {
+    background-color: var(--e-global-color-6ad8614);
+    color: #fff;
+  }
+
+  .toggle-close {
+    display: none;
+  }
+
+  .menu-toggle[aria-expanded='true'] {
+    background-color: var(--e-global-color-6ad8614);
+  }
+
+  .menu-toggle[aria-expanded='true'] .toggle-open {
+    display: none;
+  }
+
+  .menu-toggle[aria-expanded='true'] .toggle-close {
+    display: inline-block;
+  }
+
+  /* Dropdown. `full_width: stretch` on the original spans the whole section,
+     so it is anchored to the bar rather than to the nav column. */
+  .mobile-nav {
+    position: absolute;
+    inset-inline: 0;
+    inset-block-start: 100%;
+    background-color: #fff;
+  }
+
+  .mobile-nav .nav-item {
+    display: flex;
+    justify-content: center;
+    padding: 10px 20px;
+    background-color: #3f444b;
+    color: #fff;
+  }
+
+  .mobile-nav .nav-item:hover,
+  .mobile-nav .nav-item:focus,
+  .mobile-nav .nav-item--active {
+    background-color: var(--e-global-color-6ad8614);
+  }
+
+  @media (max-width: 1024px) {
+    .main-nav {
+      display: none;
+    }
+
+    .menu-toggle {
+      display: flex;
+      font-size: 33px; /* --nav-menu-icon-size: 33px */
+    }
+  }
+
+  @media (max-width: 767px) {
+    .col--spacer {
+      width: 20%;
+    }
+    .col--logo {
+      width: 50%;
+    }
+    .col--nav {
+      width: 20%;
+    }
+
+    .logo img {
+      width: 35%;
+    }
+
+    .nav-widget {
+      padding: 0;
+    }
+
+    .menu-toggle {
+      font-size: 25px; /* --nav-menu-icon-size: 25px */
+    }
+  }
+
+  @media (max-width: 1024px) and (min-width: 768px) {
+    .logo img {
+      width: 25%;
+    }
+  }
+</style>
+
+<script is:inline>
+  // The original site's own scroll handler, unchanged in behaviour.
+  (function () {
+    var bar = document.getElementById('site-header-bar');
+    if (bar) {
+      var onScroll = function () {
+        if (window.scrollY > 10) bar.classList.add('scrolled');
+        else bar.classList.remove('scrolled');
+      };
+      window.addEventListener('scroll', onScroll, { passive: true });
+      onScroll();
+    }
+
+    var toggle = document.getElementById('menu-toggle');
+    var panel = document.getElementById('mobile-nav');
+    if (toggle && panel) {
+      toggle.addEventListener('click', function () {
+        var open = toggle.getAttribute('aria-expanded') === 'true';
+        toggle.setAttribute('aria-expanded', String(!open));
+        panel.hidden = open;
+      });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && toggle.getAttribute('aria-expanded') === 'true') {
+          toggle.setAttribute('aria-expanded', 'false');
+          panel.hidden = true;
+          toggle.focus();
+        }
+      });
+    }
+  })();
+</script>
