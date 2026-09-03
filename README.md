@@ -28,8 +28,19 @@ fresh clone type-checks without running Wrangler first.
 
 ## Deploying
 
-Cloudflare Workers, built and deployed by **Workers Builds** — push to `main`
-and Cloudflare builds it. Nothing is deployed by hand.
+Cloudflare Workers. The Worker is **`boldimaging`**, live at
+`https://boldimaging.ash-47a.workers.dev`.
+
+The first deploy was run by hand from a workstation:
+
+```bash
+npm run build
+npx wrangler deploy -c dist/server/wrangler.json
+```
+
+**Workers Builds is not connected yet.** Until it is, a push to `main` deploys
+nothing and the live Worker silently falls behind the branch — so either run the
+two commands above after merging, or finish the connection below.
 
 Dashboard settings, which must match exactly:
 
