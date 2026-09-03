@@ -120,6 +120,12 @@ and Astro's same-origin check rejects a cross-site `POST`, so testing with
   button. Same for the one inline "contact page" link on the home page.
 - **The flip boxes fade, they do not flip.** The widget is set to `fade`.
 - **The header's left third is empty**, as on the original.
+- **The header is transparent only on the home page.** Every other page on the
+  live site carries an extra `.sticky-header { background-color:
+  rgba(58,58,58,0.5) !important; ... }` rule in its inline `<style>` block, so
+  the bar is dark from the top — without it the white logo and white menu would
+  sit invisibly on those pages' white backgrounds. The logo shrink stays tied to
+  scrolling on every page.
 
 ## Known differences from the original
 

@@ -1,9 +1,20 @@
 ---
 // Header — ported from Elementor template post-783 ("header" location).
 //
-// The bar is fixed and transparent at rest, sitting on top of the hero; the
-// site's own inline script adds `.scrolled` past 10px, which fades in a
-// translucent dark background, a blur and a shadow and shrinks the logo.
+// The bar is fixed. On the home page it is transparent at rest, sitting on top
+// of the hero, and the site's own inline script adds `.scrolled` past 10px,
+// which fades in a translucent dark background, a blur and a shadow and shrinks
+// the logo.
+//
+// Every other page carries one extra rule in its inline <style> block:
+//
+//   .sticky-header { background-color: rgba(58,58,58,0.5) !important;
+//                    box-shadow: 0 4px 30px rgba(0,0,0,0.3);
+//                    backdrop-filter: blur(9px) }
+//
+// so the bar is dark from the top — without it the white logo and white menu
+// would sit invisibly on those pages' white backgrounds. The logo shrink stays
+// tied to `.scrolled` on every page.  ->  `solid`
 //
 //   #c5d9b85  the bar          fixed, top 0, full width, bg #3A3A3A00, z-index 99
 //   #6e48603  left spacer      30% desktop / 20% <=767, empty on the live site
@@ -15,10 +26,12 @@ import { NAV, media } from '../consts';
 
 const { path } = Astro.props as { path: string };
 const isCurrent = (href: string) => path === href;
+// Only the home page gets the transparent-over-hero treatment.
+const solid = path !== '/';
 ---
 
 <header class="site-header">
-  <div class="bar sticky-header" id="site-header-bar">
+  <div class:list={['bar', 'sticky-header', { 'bar--solid': solid }]} id="site-header-bar">
     <div class="col col--spacer"></div>
 
     <div class="col col--logo">
@@ -122,7 +135,8 @@ const isCurrent = (href: string) => path === href;
     transition: background-color 0.5s ease;
   }
 
-  .bar.scrolled {
+  .bar.scrolled,
+  .bar--solid {
     background-color: rgba(58, 58, 58, 0.5);
     box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
     backdrop-filter: blur(9px);
