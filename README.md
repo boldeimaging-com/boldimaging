@@ -62,6 +62,29 @@ commit a lockfile produced by `npm install --omit=optional`: it strips the
 rolldown native binding and CI then fails with *"Cannot find native binding."*
 The committed lockfile carries all 15 `@rolldown/binding-*` platforms.
 
+### Image store
+
+Every image and the hero video also live in Backblaze B2, bucket
+**`boldeimaging-img`** (public, lifecycle *keep only the last version*), holding
+the same 351 files as `public/media/` — verified equal by count, bytes and SHA-1.
+
+Two addresses that look alike and are not interchangeable:
+
+```
+native origin   f005.backblazeb2.com              <- the CNAME target for img.boldeimaging.com
+S3 endpoint     s3.us-east-005.backblazeb2.com    <- keys and SDKs only
+```
+
+Using the S3 endpoint as the CNAME target is the usual failure, and it fails
+confusingly.
+
+**The site does not use the bucket yet, and must never reference
+`*.backblazeb2.com` directly** — that would bill the client for every image
+view instead of going through Cloudflare. Images are served from the Worker's
+own assets today. Switching them to `img.boldeimaging.com` needs the DNS
+cutover first (the zone is still pending), then a CNAME to the native origin
+plus the transform rule that scopes it to this one bucket.
+
 ### Where it is reviewed
 
 `boldimaging.ash-47a.workers.dev`, and that URL is public — see the note in
