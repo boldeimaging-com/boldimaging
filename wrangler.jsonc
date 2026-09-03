@@ -1,15 +1,32 @@
 {
   // `name` must match the Cloudflare Worker this repo deploys to, exactly, or
-  // the Workers Build fails.
+  // the Workers Build fails with an error that names neither side clearly.
   "name": "boldimaging",
   "compatibility_date": "2026-09-03",
   "compatibility_flags": ["nodejs_compat"],
-  // @astrojs/cloudflare v14 supplies `main` and the assets directory itself
-  // (it writes the deploy-time config to dist/_worker.js/wrangler.json), so
-  // this file only carries what the adapter does not derive.
+
+  // @astrojs/cloudflare v14 supplies `main` and the assets directory itself.
+  // It merges this file with what it derives and writes the real deploy-time
+  // config to dist/server/wrangler.json (main: entry.mjs, assets: ../client).
+  //
+  // So the deploy command is NOT a bare `wrangler deploy` -- that reads this
+  // file, which has no `main`. It must point at the generated config:
+  //
+  //     npx wrangler deploy -c dist/server/wrangler.json
+  //
+  // which is what `npm run deploy` does.
   "assets": {
     "binding": "ASSETS",
     "not_found_handling": "404-page",
     "html_handling": "auto-trailing-slash"
-  }
+  },
+
+  // Deliberate: this build is reviewed at boldimaging.ash-47a.workers.dev and
+  // that URL is public. boldeimaging.com cannot host the preview yet -- its
+  // zone is still pending on Cloudflare (nameservers remain at GoDaddy), so no
+  // hostname under it resolves or can be issued a certificate.
+  //
+  // Revisit when the domain is pointed at the new site: the apex belongs to the
+  // cutover step, never to this one.
+  "workers_dev": true
 }
