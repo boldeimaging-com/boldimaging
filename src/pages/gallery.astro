@@ -21,7 +21,10 @@ export const prerender = true;
 
 <Base
   title="Gallery – BolDe Imaging"
-  description="Photographs of BolDe Imaging signage projects, by type: awnings, banners, channel letters, construction, custom, cut out letters, fascia, hoarding, interiors, push thru, pylon and wayfinding."
+  description="Photographs of BolDe Imaging signage projects — awnings, banners, channel letters, hoarding, interiors, push thru, pylon, fascia and wayfinding."
+  image={GALLERY_ITEMS[0]!.full}
+  pageType="ImageGallery"
+  breadcrumbs={[{ name: 'Gallery', href: '/gallery/' }]}
 >
   <section class="gallery-section">
     <div class="container">

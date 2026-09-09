@@ -8,7 +8,11 @@ import ThemeArchive from '../components/ThemeArchive.astro';
 export const prerender = true;
 ---
 
-<Base title="Page not found – BolDe Imaging">
+<Base
+  title="Page not found – BolDe Imaging"
+  description="That page could not be found. Use the menu to reach our work, the gallery, file upload or contact details, or call BolDe Imaging on (416) 241 2800."
+  noindex={true}
+>
   <ThemeArchive heading="The page can’t be found.">
     <p>It looks like nothing was found at this location.</p>
   </ThemeArchive>

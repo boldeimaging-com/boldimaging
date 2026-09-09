@@ -1,0 +1,158 @@
+---
+/**
+ * Every search-facing tag on the site, in one component.
+ *
+ * Layer 2 of `astro-seo-kit`: one file to review instead of a per-page audit,
+ * and one place where a change reaches all twenty addresses at once.
+ *
+ * Layer 1 is the Zod schema below. Astro has no equivalent of Yoast's red
+ * light — it emits nothing and complains about nothing — so the schema is what
+ * replaces it: a page with no description, or one that is 200 characters long
+ * and therefore invisible past Google's 160, FAILS `npm run build` rather than
+ * deploying quietly. The bounds are Google's truncation points, not taste.
+ *
+ * `bin/check-seo.mjs` then re-checks the same things against the built HTML,
+ * which catches anything that renders without going through this component.
+ */
+import { z } from 'zod';
+import {
+  ORGANIZATION,
+  SITE_URL,
+  VERIFICATION,
+  WEBSITE,
+  WEBSITE_ID,
+  absoluteMedia,
+  DEFAULT_OG_IMAGE,
+} from '../../seo.config';
+import { SITE } from '../consts';
+
+const schema = z.object({
+  /** Carried verbatim from the old site on 18 of 19 addresses. 60 is where
+   *  Google truncates. */
+  title: z.string().min(10).max(60),
+  /** The old site had none, anywhere. 160 is where Google truncates; under 50
+   *  is not a description. */
+  description: z.string().min(50).max(160),
+  /** Uploads-relative, e.g. `2021/04/tribute14.jpg`. Resolved absolute against
+   *  SITE_URL, so it follows MEDIA_BASE to img.boldeimaging.com at gate 7. */
+  image: z.string().min(1).optional(),
+  /** Thin pages that should stay crawlable but out of the index. */
+  noindex: z.boolean().optional(),
+  /** Trail for the BreadcrumbList node. Home is prepended automatically; a
+   *  page passes only its own ancestors and itself. */
+  breadcrumbs: z.array(z.object({ name: z.string(), href: z.string() })).optional(),
+  /** Extra JSON-LD nodes for this page, merged into the one @graph. Objects,
+   *  never strings — see the note above the serialiser below. */
+  extraJsonld: z.array(z.record(z.string(), z.unknown())).optional(),
+  /** Schema.org type for the page node itself. */
+  pageType: z.string().optional(),
+});
+
+export type Props = z.input<typeof schema>;
+
+const path = Astro.url.pathname;
+
+const parsed = schema.safeParse(Astro.props);
+if (!parsed.success) {
+  // Fails the build, naming the page and the field. This is the red light.
+  throw new Error(
+    `SEO metadata is invalid for ${path}:\n` +
+      parsed.error.issues
+        .map((i) => `  ${i.path.join('.') || '(root)'}: ${i.message}`)
+        .join('\n'),
+  );
+}
+
+const {
+  title,
+  description,
+  image,
+  noindex = false,
+  breadcrumbs,
+  extraJsonld = [],
+  pageType = 'WebPage',
+} = parsed.data;
+
+const canonical = new URL(path, SITE_URL).href;
+const ogImage = absoluteMedia(image ?? DEFAULT_OG_IMAGE);
+
+/**
+ * The old site emitted `max-image-preview:large` and nothing else. That is
+ * carried; the rest lifts the snippet and preview caps Google otherwise
+ * applies by default.
+ */
+const robots = noindex
+  ? 'noindex, follow'
+  : 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1';
+
+const trail = [{ name: 'Home', href: '/' }, ...(breadcrumbs ?? [])];
+
+const graph: Record<string, unknown>[] = [
+  ORGANIZATION as unknown as Record<string, unknown>,
+  WEBSITE as unknown as Record<string, unknown>,
+  {
+    '@type': pageType,
+    '@id': `${canonical}#webpage`,
+    url: canonical,
+    name: title,
+    description,
+    isPartOf: { '@id': WEBSITE_ID },
+    about: { '@id': ORGANIZATION['@id'] },
+    primaryImageOfPage: { '@type': 'ImageObject', url: ogImage },
+    inLanguage: 'en-US',
+    ...(trail.length > 1 ? { breadcrumb: { '@id': `${canonical}#breadcrumb` } } : {}),
+  },
+  ...(trail.length > 1
+    ? [
+        {
+          '@type': 'BreadcrumbList',
+          '@id': `${canonical}#breadcrumb`,
+          itemListElement: trail.map((crumb, i) => ({
+            '@type': 'ListItem',
+            position: i + 1,
+            name: crumb.name,
+            item: new URL(crumb.href, SITE_URL).href,
+          })),
+        },
+      ]
+    : []),
+  ...extraJsonld,
+];
+
+/**
+ * Serialised with JSON.stringify from real objects, never assembled as a
+ * string. `astro-seo-kit` records why: a single stray line break inside a
+ * hand-written JSON-LD string makes Google discard the entire block, and
+ * nothing anywhere reports it. A presence check passes on such a block, which
+ * is why bin/check-seo.mjs re-parses instead.
+ *
+ * `<` is escaped so a value containing `</script>` cannot close the tag early.
+ */
+const jsonld = JSON.stringify({
+  '@context': 'https://schema.org',
+  '@graph': graph,
+}).replace(/</g, '\\u003c');
+---
+
+<title>{title}</title>
+<meta name="description" content={description} />
+<link rel="canonical" href={canonical} />
+<meta name="robots" content={robots} />
+
+<meta property="og:site_name" content={SITE.title} />
+<meta property="og:type" content="website" />
+<meta property="og:locale" content="en_US" />
+<meta property="og:title" content={title} />
+<meta property="og:description" content={description} />
+<meta property="og:url" content={canonical} />
+<meta property="og:image" content={ogImage} />
+<meta property="og:image:alt" content={title} />
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content={title} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={ogImage} />
+
+{VERIFICATION.map((v) => <meta name={v.name} content={v.content} />)}
+
+<script type="application/ld+json" is:inline set:html={jsonld} />

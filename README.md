@@ -16,9 +16,12 @@ from in a comment, so a later change can be traced back.
 ```bash
 npm install
 npm run dev      # http://localhost:4321
-npm run build    # -> dist/client (pages + assets) and dist/server (the Worker)
+npm run build    # -> dist/client (pages + assets) and dist/server (the Worker),
+                 #    then bin/check-seo.mjs over the result — non-zero on a fail
 npm run preview
 npm run check    # astro check — 0 errors expected
+npm run check:seo # the SEO lint alone, against the last build
+npm run build:only # astro build with the lint skipped — for debugging only
 npm run types    # regenerate worker-configuration.d.ts after editing wrangler.jsonc
 npm run deploy   # build, then wrangler deploy against the generated config
 ```
@@ -99,13 +102,115 @@ Because that preview URL is public and crawlable, every page carries
 what keeps the copy from being indexed as a duplicate of the client's live site.
 Do not repoint those at the preview host.
 
+## SEO
+
+### What the old site actually had
+
+Harvested from all nineteen live addresses on 2026-09-09, while
+boldeimaging.com was still up. **There was no Yoast and no RankMath** — the
+`<head>` is WordPress core and nothing else:
+
+| | old site |
+|---|---|
+| `<title>` | yes — core defaults, `"Page – BolDe Imaging"`, home is the bare brand name |
+| `rel=canonical` | on 17 of 19 — **missing on both `/category/` pages** |
+| `robots` | `max-image-preview:large` |
+| meta description | **none, on any address** |
+| Open Graph / Twitter | **none, on any address** |
+| JSON-LD | **none, on any address** |
+| verification tokens | **none** — no Google, Bing, Pinterest, Ahrefs or Statvoo |
+| `robots.txt` | `User-agent: *` + `Crawl-delay: 30`, no `Sitemap:` line |
+| sitemap | `/wp-sitemap.xml` + three children, 19 addresses |
+
+Two consequences worth stating plainly. There is **nothing to carry verbatim**:
+no hand-written schema to preserve, and **no verification token that
+disappears when the old site is switched off** — the usual reason to harvest
+before gate 20 does not apply here. And every JSON-LD node this site emits is
+**generated**, all 92 of them; none is carried. That distinction is recorded in
+`seo.config.ts` so a later reader does not have to re-derive it.
+
+### What is maintained
+
+- **Every one of the 19 old addresses still serves**, and 18 of 19 keep their
+  `<title>` byte for byte. The exception is the home page — see below.
+- `max-image-preview:large` is still emitted, inside a fuller `robots` value.
+- The sitemap keeps the WordPress ordering.
+
+### What is added
+
+| Layer | Where |
+|---|---|
+| A schema that fails the build on missing metadata | `src/components/SEO.astro` |
+| One component emitting every search-facing tag | `src/components/SEO.astro` |
+| Site-wide config, in the repo rather than a plugin database | `seo.config.ts` |
+| A lint over the built HTML, run by `npm run build` | `bin/check-seo.mjs` |
+| Authored search copy for the twelve portfolio pages | `src/data/portfolio-seo.ts` |
+
+Concretely: a meta description on all 20 pages (there were none), Open Graph
+and Twitter cards with an absolute `og:image` (there were none), a
+`LocalBusiness` + `WebSite` + per-page graph with `BreadcrumbList` and a
+`Service` node per portfolio entry (there was none), a canonical on all 20
+including the two the old site missed, `Sitemap:` in `robots.txt`, alt text on
+the twelve portfolio hero images and the six association logos that all shipped
+empty, and `Crawl-delay: 30` dropped.
+
+**Astro has no equivalent of Yoast's red light** — it emits nothing and
+complains about nothing. The Zod schema in `SEO.astro` is what replaces it. A
+page with no description, or one 200 characters long and therefore invisible
+past Google's 160, fails `npm run build` naming the page and the field.
+
+### Three judgement calls, each reversible in one edit
+
+1. **The home page title changed.** The old one was `BolDe Imaging` — thirteen
+   characters, no indication of what the business does or where, on the
+   strongest page of the site. It is now
+   `BolDe Imaging – Custom Signs & Graphics, Mississauga`. The brand phrase
+   still leads, so brand searches are unaffected. Restore the string in
+   `src/pages/index.astro` to revert. **This is the only title that changed.**
+2. **Both `/category/` pages are now `noindex, follow`** and are dropped from
+   `sitemap.xml`. They render an empty archive — see the note at the top of
+   `src/pages/category/[slug].astro` — so WordPress had Google holding two
+   empty pages for this domain. `follow` keeps the links crawlable and both
+   addresses still serve 200, so nothing pointing at them breaks. If the client
+   fills the archives, remove `noindex` and restore the two paths in
+   `src/pages/sitemap.xml.ts`.
+3. **`areaServed` in the `LocalBusiness` node says "Ontario, Canada"**, which
+   is inferred from the project names on the site (Mississauga, Scarborough,
+   Markham, Hamilton, Ottawa) rather than from anything the client states.
+   Confirm it with them. Every other field in that node comes from something
+   the site itself says.
+
+### Still open
+
+- **No purpose-made sharing image.** `og:image` defaults to the home page's own
+  banner artwork, `tribute14.jpg`, which is 1896x584 — Facebook and X will crop
+  it. Ask the client for a 1200x630. Portfolio pages already use their own
+  hero photograph.
+- **`VERIFICATION` in `seo.config.ts` is empty**, correctly. When the client
+  verifies boldeimaging.com in Search Console after the cutover, add the token
+  there and it appears on all 20 pages.
+- **The client-logo alt text is still WordPress's filenames** (`saks`, `cn`,
+  `papajohns`). Naming those brands accurately needs the client, not a guess.
+- **The preview host is public and crawlable.** Canonicals are what keep it out
+  of the index; set `workers_dev: false` at the domain cutover.
+- **`bin/check-images.mjs` does not exist in this repo.** `keep-images-on-backblaze`
+  was never installed at gate 3, so AD-9 has no build-time enforcement here —
+  only the SEO half of the pair the migration expects. Out of scope for this
+  change, but it is a real gap.
+
 ## How it is put together
 
 ```
+seo.config.ts            site-wide search presence: the LocalBusiness and
+                         WebSite nodes, the default og:image, verification
+                         tokens, and what the old site's <head> actually held
+bin/
+  check-seo.mjs          the build-time SEO lint
 src/
   consts.ts              MEDIA_BASE, site details, the four-item menu
   data/                  content scraped from the live site
     portfolio.ts           the twelve portfolio entries, in site order
+    portfolio-seo.ts       authored search copy for those twelve — NOT scraped
     home.ts                the three home-page image lists
     gallery.ts             the 116 gallery images and their twelve filters
   styles/
@@ -114,7 +219,7 @@ src/
     icons.css            Font Awesome 5 Free + eicons, only the glyphs used
     global.css           the base layer that actually computes on the original
   layouts/Base.astro     head, header, footer
-  components/            Header, Footer, ThemeArchive, the two carousels
+  components/            SEO, Header, Footer, ThemeArchive, the two carousels
   pages/                 one file per address, plus 404 and /api/*
 public/
   media/                 every image and the hero video, path-preserved

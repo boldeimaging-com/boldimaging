@@ -35,13 +35,40 @@ import ClientsMarquee from '../components/ClientsMarquee.astro';
 import ImageCarousel from '../components/ImageCarousel.astro';
 import { media } from '../consts';
 import { ASSOCIATIONS, CLIENTS, PROJECT_GALLERIES } from '../data/home';
+import { PORTFOLIO } from '../data/portfolio';
+import { SITE_URL } from '../../seo.config';
 
 export const prerender = true;
 ---
 
+{/*
+  The one title on the site that is NOT carried verbatim from WordPress.
+  The old one was the bare brand name, "BolDe Imaging" — thirteen characters,
+  no indication of what the business does or where it is, on the strongest
+  page of the site. The brand phrase still leads, so brand searches are
+  unaffected; what is added is the category and the city, which the old site
+  gave Google nowhere at all. Revert by restoring the string if the client
+  prefers the original.
+*/}
 <Base
-  title="BolDe Imaging"
-  description="BolDe Imaging Group is your single destination for all your signage needs — 2D and 3D signs, channel letters, backlit signs, full-colour LED panels, banners, awnings, construction hoarding, wayfinding, fascia signs and more."
+  title="BolDe Imaging – Custom Signs & Graphics, Mississauga"
+  description="Sign fabrication and installation since 1976 — channel letters, pylon and fascia signs, banners, awnings, hoarding and wayfinding, built in Mississauga."
+  extraJsonld={[
+    {
+      '@type': 'OfferCatalog',
+      '@id': `${SITE_URL}/#services`,
+      name: 'Signage services',
+      itemListElement: PORTFOLIO.map((item, i) => ({
+        '@type': 'Offer',
+        position: i + 1,
+        itemOffered: {
+          '@type': 'Service',
+          name: item.title,
+          url: `${SITE_URL}/portfolio/${item.slug}/`,
+        },
+      })),
+    },
+  ]}
 >
   <!-- #3d223f7 -->
   <section class="hero">

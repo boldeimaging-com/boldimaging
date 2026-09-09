@@ -14,15 +14,54 @@ export const prerender = true;
 
 export function getStaticPaths() {
   return [
-    { params: { slug: 'exterior' }, props: { name: 'Exterior' } },
-    { params: { slug: 'interior' }, props: { name: 'Interior' } },
+    {
+      params: { slug: 'exterior' },
+      props: {
+        name: 'Exterior',
+        description:
+          'Exterior signage by BolDe Imaging — pylon signs, fascia signs, channel letters, awnings, construction hoarding and wayfinding across Ontario.',
+      },
+    },
+    {
+      params: { slug: 'interior' },
+      props: {
+        name: 'Interior',
+        description:
+          'Interior signage by BolDe Imaging — reception walls, wayfinding, cut out letters, push thru signs and custom interior graphics across Ontario.',
+      },
+    },
   ];
 }
 
-const { name } = Astro.props as { name: string };
+const { name, description } = Astro.props as { name: string; description: string };
 ---
 
-<Base title={`${name} – BolDe Imaging`}>
+{/*
+  `noindex, follow` — the one place where this port deliberately does NOT
+  reproduce the old site's indexing.
+
+  Both category archives render the theme's page header and nothing else,
+  because the portfolio post type is not in the category loop; see the note at
+  the top of this file. WordPress listed them in wp-sitemap.xml and left them
+  indexable, so Google holds two empty pages for this domain. They rank for
+  nothing and count as thin content.
+
+  `follow` keeps the links crawlable and the addresses keep serving 200, so
+  nothing that points here breaks. They are also dropped from sitemap.xml, which
+  must never list a noindexed address — Search Console reports that pairing as an
+  error. If the client fills these archives, delete this block and restore the
+  two paths in src/pages/sitemap.xml.ts.
+*/}
+<Base
+  title={`${name} – BolDe Imaging`}
+  description={description}
+  pageType="CollectionPage"
+  noindex={true}
+  breadcrumbs={[
+    { name: 'Our Work', href: '/services/' },
+    { name, href: `/category/${name.toLowerCase()}/` },
+  ]}
+>
   <ThemeArchive>
     <Fragment slot="heading">Category: <span>{name}</span></Fragment>
   </ThemeArchive>

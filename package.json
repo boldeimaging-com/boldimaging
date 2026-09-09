@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build",
+    "build": "astro build && node bin/check-seo.mjs",
+    "build:only": "astro build",
+    "check:seo": "node bin/check-seo.mjs",
     "preview": "astro preview",
     "check": "astro check",
     "types": "wrangler types",
@@ -13,7 +15,8 @@
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.3.0",
-    "astro": "^7.3.1"
+    "astro": "^7.3.1",
+    "zod": "^4.5.4"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.10",

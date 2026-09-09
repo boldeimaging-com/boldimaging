@@ -13,6 +13,7 @@
 import Base from '../layouts/Base.astro';
 import { media } from '../consts';
 import { PORTFOLIO } from '../data/portfolio';
+import { SITE_URL } from '../../seo.config';
 
 export const prerender = true;
 
@@ -24,7 +25,23 @@ const CATEGORY_HREF: Record<string, string> = {
 
 <Base
   title="Our Work – BolDe Imaging"
-  description="Signage projects by BolDe Imaging: wayfinding, pylon, push thru, interiors, hoarding, cut out letters, awnings, fascia, custom signage, channel letters and banners."
+  description="Signage built by BolDe Imaging: wayfinding, pylon, push thru, interiors, hoarding, cut out letters, awnings, fascia, channel letters and banners."
+  image={PORTFOLIO[0]!.grid}
+  pageType="CollectionPage"
+  breadcrumbs={[{ name: 'Our Work', href: '/services/' }]}
+  extraJsonld={[
+    {
+      '@type': 'ItemList',
+      name: 'Signage projects',
+      numberOfItems: PORTFOLIO.length,
+      itemListElement: PORTFOLIO.map((item, i) => ({
+        '@type': 'ListItem',
+        position: i + 1,
+        name: item.title,
+        url: `${SITE_URL}/portfolio/${item.slug}/`,
+      })),
+    },
+  ]}
 >
   <section class="title-row page-top">
     <div class="container">

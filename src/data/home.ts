@@ -223,40 +223,47 @@ export const CLIENTS: Img[] = [
 ];
 
 /** "Associations" -- a plain 3-column WordPress gallery, no links. */
+/**
+ * "Associations" -- the six membership and certification logos.
+ *
+ * Their `alt` text is AUTHORED, not scraped: WordPress served all six with an
+ * empty alt. Each string is what the logo itself spells out, read off the
+ * image, so nothing here claims a membership the client does not display.
+ */
 export const ASSOCIATIONS: Img[] = [
   {
     "src": "2021/04/bild-2.png",
-    "alt": "",
+    "alt": "BILD",
     "w": 125,
     "h": 85
   },
   {
     "src": "2021/04/SA-2.png",
-    "alt": "",
+    "alt": "CSA",
     "w": 100,
     "h": 68
   },
   {
     "src": "2021/04/untas-1.png",
-    "alt": "",
+    "alt": "International Sign Association",
     "w": 150,
     "h": 102
   },
   {
     "src": "2021/04/sacc-1.png",
-    "alt": "",
+    "alt": "Sign Association of Canada",
     "w": 150,
     "h": 102
   },
   {
     "src": "2021/04/contra-1.png",
-    "alt": "",
+    "alt": "ContractorCheck",
     "w": 150,
     "h": 102
   },
   {
     "src": "2021/04/osa-1.png",
-    "alt": "",
+    "alt": "Ontario Sign Association",
     "w": 150,
     "h": 102
   }
@@ -332,7 +339,7 @@ export const PROJECT_GALLERIES: Img[] = [
   },
   {
     "src": "2021/04/Green-Park-Large-Banner-768x576.jpg",
-    "alt": "GE DIGITAL CAMERA",
+    "alt": "Greenpark banner and hoarding on a mid-rise construction site",
     "w": 768,
     "h": 576
   },

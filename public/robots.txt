@@ -1,4 +1,15 @@
+# The live WordPress site serves exactly this, and nothing else:
+#
+#     User-agent: *
+#     Crawl-delay: 30
+#
+# No sitemap line, so nothing pointed a crawler at the address list -- the port
+# added that. Crawl-delay is dropped here: it caps Bing and Yandex at one
+# request every thirty seconds, a WordPress-era throttle with nothing left to
+# protect now that the site is static files on Cloudflare's edge, and Google
+# ignores the directive entirely.
+
 User-agent: *
-Crawl-delay: 30
+Allow: /
 
 Sitemap: https://boldeimaging.com/sitemap.xml

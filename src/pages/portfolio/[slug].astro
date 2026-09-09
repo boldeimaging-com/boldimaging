@@ -12,6 +12,8 @@
 import Base from '../../layouts/Base.astro';
 import { media } from '../../consts';
 import { PORTFOLIO } from '../../data/portfolio';
+import { PORTFOLIO_SEO } from '../../data/portfolio-seo';
+import { ORG_ID, SITE_URL, absoluteMedia } from '../../../seo.config';
 
 export const prerender = true;
 
@@ -31,9 +33,49 @@ const { item, prev, next } = Astro.props as {
   prev: (typeof PORTFOLIO)[number] | null;
   next: (typeof PORTFOLIO)[number] | null;
 };
+
+// Missing search copy fails the build here rather than shipping a page with an
+// empty description, which is what the old site did on all twelve of these.
+const seo = PORTFOLIO_SEO[item.slug];
+if (!seo) {
+  throw new Error(
+    `No entry in src/data/portfolio-seo.ts for portfolio item "${item.slug}". ` +
+      'Every portfolio address needs an authored description and image alt.',
+  );
+}
+
+const url = `${SITE_URL}/portfolio/${item.slug}/`;
 ---
 
-<Base title={`${item.title} – BolDe Imaging`} description={item.body || undefined}>
+<Base
+  title={`${item.title} – BolDe Imaging`}
+  description={seo.description}
+  image={item.image}
+  pageType="ItemPage"
+  breadcrumbs={[
+    { name: 'Our Work', href: '/services/' },
+    { name: item.title, href: `/portfolio/${item.slug}/` },
+  ]}
+  extraJsonld={[
+    {
+      '@type': 'Service',
+      '@id': `${url}#service`,
+      name: item.title,
+      serviceType: item.title,
+      description: item.body || seo.description,
+      url,
+      provider: { '@id': ORG_ID },
+      areaServed: { '@type': 'AdministrativeArea', name: 'Ontario, Canada' },
+      image: {
+        '@type': 'ImageObject',
+        url: absoluteMedia(item.image),
+        width: item.imageWidth,
+        height: item.imageHeight,
+        caption: seo.imageAlt,
+      },
+    },
+  ]}
+>
   <section class="title-row page-top">
     <div class="container title-row__inner">
       <div class="half">
@@ -86,7 +128,7 @@ const { item, prev, next } = Astro.props as {
           src={media(item.image)}
           width={item.imageWidth}
           height={item.imageHeight}
-          alt=""
+          alt={seo.imageAlt}
           loading="eager"
         />
       </div>
