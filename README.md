@@ -96,6 +96,40 @@ The old `/wp-sitemap*.xml` addresses are **not** served here. Keeping old
 addresses working is a redirect job at the Cloudflare edge, covering all of them
 at once, rather than something to reimplement piecemeal in the app.
 
+### The preview is noindexed — at the edge, not in this repo
+
+`boldeimaging.10xid.com` returns `X-Robots-Tag: noindex, nofollow, noarchive`
+on every response. **This lives in Cloudflare, not in git**, so it is invisible
+here and needs recreating by hand if the zone is ever rebuilt:
+
+```
+zone     10xid.com
+ruleset  http_response_headers_transform ("default")
+rule     boldeimaging.10xid.com — noindex the preview (covers XML/PDF, which meta cannot)
+expr     http.host eq "boldeimaging.10xid.com"
+action   rewrite → set X-Robots-Tag: noindex, nofollow, noarchive
+```
+
+**It is deliberately not a `<meta name="robots">` tag and not a `_headers`
+entry.** Both of those are properties of the build, and the build is what gets
+attached to `boldeimaging.com` at cutover — a noindex baked into either would
+quietly de-index the client's real site the day it goes live. Scoping it to the
+preview hostname at the edge means the production host can never inherit it.
+
+The header form also covers what a meta tag cannot: the sitemaps, the images
+and the 404 are all XML, binary or non-HTML, and none of them can carry a meta
+tag.
+
+**`robots.txt` must keep allowing crawlers, and does.** A `Disallow: /` would
+be counterproductive here: a crawler that is not allowed to fetch the page can
+never see the noindex header, and the address can still surface in results.
+Allow the crawl, refuse the index.
+
+`workers.dev` cannot carry this rule — it is not inside a zone, so no zone
+ruleset reaches it. That hostname is still fully indexable; the canonical tags
+pointing at `boldeimaging.com` are all that protect it. Turn it off with
+`"workers_dev": false` if that matters.
+
 ### robots.txt has a zone-level surprise
 
 The file in `public/robots.txt` is short. What the **custom domain** serves is
