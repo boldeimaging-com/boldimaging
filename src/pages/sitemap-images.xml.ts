@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { CLIENTS, ASSOCIATIONS, PROJECT_GALLERIES } from '../data/home';
+import { CLIENTS, ASSOCIATIONS, PROJECT_GALLERIES, HOME_BACKGROUNDS, LOGO } from '../data/home';
 import { GALLERY_ITEMS } from '../data/gallery';
 import { PORTFOLIO } from '../data/portfolio';
 import { originOf, urlset, xml, type UrlEntry } from '../lib/sitemap';
@@ -19,10 +19,15 @@ import { originOf, urlset, xml, type UrlEntry } from '../lib/sitemap';
  * what carries the description now.
  *
  * The gallery lists `full`, not `thumb` -- the full-size file is what the
- * lightbox opens and what should rank, not the 300px derivative.
+ * lightbox opens and what should rank, not the 300px derivative. WordPress
+ * derivatives generally (-300x225 and friends) are excluded for the same
+ * reason: listing a resized copy alongside its original makes the two compete.
+ *
+ * Favicons are excluded too -- they are site chrome, not content. The hero
+ * .mp4 cannot go here at all; an image sitemap has no element for video.
  *
  * Limits are 1,000 images per page entry and 50,000 URLs per sitemap. The
- * biggest entry here is /gallery/ at 232, so there is a lot of headroom.
+ * biggest entry here is /gallery/ at 116, so there is a lot of headroom.
  */
 export const prerender = true;
 
@@ -30,6 +35,10 @@ const ENTRIES: UrlEntry[] = [
   {
     path: '/',
     images: [
+      // CSS backgrounds first: a crawler cannot discover these any other way,
+      // since there is no <img> element for them anywhere in the markup.
+      ...HOME_BACKGROUNDS.map((i) => i.src),
+      LOGO.src,
       ...CLIENTS.map((i) => i.src),
       ...ASSOCIATIONS.map((i) => i.src),
       ...PROJECT_GALLERIES.map((i) => i.src),

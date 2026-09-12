@@ -361,3 +361,49 @@ export const PROJECT_GALLERIES: Img[] = [
     "h": 576
   }
 ];
+
+/**
+ * The three full-bleed CSS background images on the home page, in the order
+ * the sections appear. Elementor element ids are the same ones the section
+ * comments in index.astro carry.
+ *
+ * These live here rather than inline in the page for one reason: an image
+ * sitemap is the only way a crawler learns about a CSS background at all --
+ * there is no <img> for it to find -- so they have to be reachable from the
+ * sitemap route. Keeping the single source here means adding a background to
+ * the page cannot silently drop it out of the sitemap again.
+ *
+ * `alt` is descriptive rather than empty even though CSS backgrounds carry no
+ * alt attribute, because it documents what each file actually shows.
+ */
+export const HOME_BACKGROUNDS: Img[] = [
+  {
+    // #faf9b1e — "Be BolDe." section
+    src: '2021/04/Slider3_BG2.jpg',
+    alt: 'BolDe Imaging signage production facility',
+    w: 1920,
+    h: 1280,
+  },
+  {
+    // #ed8be87 — full-width image band
+    src: '2021/04/tribute14.jpg',
+    alt: 'Tribute Communities presentation centre interior signage',
+    w: 1920,
+    h: 1280,
+  },
+  {
+    // #d8623db — "About Us" section
+    src: '2021/04/128A233912.jpeg',
+    alt: 'BolDe Imaging fabrication shop floor',
+    w: 1920,
+    h: 1280,
+  },
+];
+
+/** The header wordmark, shown on every page; listed once, against the home page. */
+export const LOGO: Img = {
+  src: '2021/04/Bolde_logo_White.png',
+  alt: 'BolDe Imaging',
+  w: 300,
+  h: 300,
+};

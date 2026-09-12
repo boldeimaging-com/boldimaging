@@ -34,7 +34,7 @@ import Base from '../layouts/Base.astro';
 import ClientsMarquee from '../components/ClientsMarquee.astro';
 import ImageCarousel from '../components/ImageCarousel.astro';
 import { media } from '../consts';
-import { ASSOCIATIONS, CLIENTS, PROJECT_GALLERIES } from '../data/home';
+import { ASSOCIATIONS, CLIENTS, HOME_BACKGROUNDS, PROJECT_GALLERIES } from '../data/home';
 
 export const prerender = true;
 ---
@@ -72,7 +72,7 @@ export const prerender = true;
   </section>
 
   <!-- #faf9b1e -->
-  <section class="bebolde" id="explore" style={`--bg:url('${media('2021/04/Slider3_BG2.jpg')}')`}>
+  <section class="bebolde" id="explore" style={`--bg:url('${media(HOME_BACKGROUNDS[0].src)}')`}>
     <div class="bebolde__overlay"></div>
     <div class="container bebolde__inner">
       <div class="pad">
@@ -93,10 +93,10 @@ export const prerender = true;
   </section>
 
   <!-- #ed8be87 -->
-  <section class="band" role="presentation" style={`--bg:url('${media('2021/04/tribute14.jpg')}')`}></section>
+  <section class="band" role="presentation" style={`--bg:url('${media(HOME_BACKGROUNDS[1].src)}')`}></section>
 
   <!-- #d8623db -->
-  <section class="about" style={`--bg:url('${media('2021/04/128A233912.jpeg')}')`}>
+  <section class="about" style={`--bg:url('${media(HOME_BACKGROUNDS[2].src)}')`}>
     <div class="about__overlay"></div>
     <div class="container about__inner">
       <div class="about__col">
