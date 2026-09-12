@@ -1,4 +1,19 @@
-User-agent: *
-Crawl-delay: 30
+# Every page and every image on this site is meant to be indexed.
+#
+# There is deliberately no Disallow here. The preview hostname is kept out of
+# search with an X-Robots-Tag header at the Cloudflare edge instead, because a
+# crawler that is not allowed to fetch a page can never see a noindex on it --
+# blocking the crawl is what leaves bare URLs floating in results. Allow the
+# crawl, refuse the index, and only on the preview host.
+#
+# The original WordPress robots.txt carried `Crawl-delay: 30`. It is dropped on
+# purpose: Google ignores the directive outright, Bing honours it, and at one
+# request per 30 seconds the 19 pages and 199 images here would take the better
+# part of two hours to crawl -- a real handicap for a site that needs fresh
+# discovery straight after a migration.
 
+User-agent: *
+Allow: /
+
+# The index; it points at the page, portfolio, category and image sitemaps.
 Sitemap: https://boldeimaging.com/sitemap.xml

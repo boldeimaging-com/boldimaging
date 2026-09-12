@@ -130,6 +130,24 @@ ruleset reaches it. That hostname is still fully indexable; the canonical tags
 pointing at `boldeimaging.com` are all that protect it. Turn it off with
 `"workers_dev": false` if that matters.
 
+**This rule has already been deleted once by something else.** `10xid.com` is a
+shared zone carrying several client previews, and the ruleset went from version
+3 to 9 in minutes while another client's rule replaced ours — the signature of a
+whole-ruleset `PUT` built from a stale read. Add rules with
+
+```
+POST /zones/{zone}/rulesets/{ruleset}/rules
+```
+
+which appends one rule and leaves the rest alone, never `PUT` on the ruleset.
+That protects other people's rules from us; it does not protect ours from them.
+**Re-check the header after any zone work**, and treat its absence as likely
+clobbering rather than a caching artefact:
+
+```bash
+curl -sSI https://boldeimaging.10xid.com/ | grep -i x-robots-tag
+```
+
 ### robots.txt has a zone-level surprise
 
 The file in `public/robots.txt` is short. What the **custom domain** serves is
