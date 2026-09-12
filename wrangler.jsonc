@@ -21,6 +21,23 @@
     "html_handling": "auto-trailing-slash"
   },
 
+  // Reviewed at boldeimaging.10xid.com, in the studio's own 10xid.com zone --
+  // NOT on the client's domain, which stays untouched until cutover.
+  //
+  // custom_domain, not a route: the Worker is the origin, so Cloudflare creates
+  // the DNS record and issues the certificate itself. A route would expect a
+  // real origin behind a proxied record, which is the wrong shape here.
+  //
+  // What Cloudflare creates is a proxied `AAAA <host> -> 100::` placeholder --
+  // 100::/64 is the IPv6 discard prefix, so the record exists only to be
+  // proxied and never receives traffic. The other client hostnames in this zone
+  // carry the same record, which is how you can tell they are Custom Domains too.
+  //
+  // The zone has a proxied *.10xid.com wildcard at 185.206.163.79, so this name
+  // resolved before it was ours and served 525. The Custom Domain's own record
+  // is more specific than the wildcard and takes precedence.
+  "routes": [{ "pattern": "boldeimaging.10xid.com", "custom_domain": true }],
+
   // Deliberate: this build is reviewed at boldimaging.ash-47a.workers.dev and
   // that URL is public. boldeimaging.com cannot host the preview yet -- its
   // zone is still pending on Cloudflare (nameservers remain at GoDaddy), so no

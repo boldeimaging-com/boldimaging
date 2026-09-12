@@ -87,8 +87,13 @@ plus the transform rule that scopes it to this one bucket.
 
 ### Where it is reviewed
 
-`boldimaging.ash-47a.workers.dev`, and that URL is public — see the note in
-`wrangler.jsonc`. **No hostname under `boldeimaging.com` can be attached yet:**
+**https://boldeimaging.10xid.com** — the studio's own `10xid.com` zone, attached
+as a Worker Custom Domain (declared in `wrangler.jsonc`, so a redeploy keeps it).
+The client's domain is untouched.
+
+`boldimaging.ash-47a.workers.dev` also still answers, and that URL is public —
+see the note in `wrangler.jsonc`. **No hostname under `boldeimaging.com` can be
+attached yet:**
 the zone is `pending` on Cloudflare and the domain's nameservers are still at
 GoDaddy (`ns65/ns66.domaincontrol.com`), so nothing under it resolves or can be
 issued a certificate. Attaching the apex belongs to the domain cutover, never to
