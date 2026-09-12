@@ -62,6 +62,60 @@ commit a lockfile produced by `npm install --omit=optional`: it strips the
 rolldown native binding and CI then fails with *"Cannot find native binding."*
 The committed lockfile carries all 15 `@rolldown/binding-*` platforms.
 
+### Sitemaps
+
+`/sitemap.xml` is a **sitemap index** — the one address `robots.txt` advertises.
+Its children mirror how WordPress split this site, so the shape Google has
+crawled for years survives the migration:
+
+| New | Replaces | Contents |
+|---|---|---|
+| `sitemap-pages.xml` | `wp-sitemap-posts-page-1.xml` | 5 pages |
+| `sitemap-portfolio.xml` | `wp-sitemap-posts-portfolio-1.xml` | 12 portfolio entries |
+| `sitemap-categories.xml` | `wp-sitemap-taxonomies-category-1.xml` | 2 category archives |
+| `sitemap-images.xml` | *(no counterpart)* | 195 images across 15 pages |
+
+All generated from the same data modules the pages render from, so adding a
+portfolio entry or a gallery image updates the sitemaps with nothing else to
+remember. Addresses resolve against `site` in `astro.config.mjs` — the real
+domain, never the preview hostname, since a sitemap full of `*.workers.dev`
+addresses is worthless to a crawler.
+
+**`lastmod` is carried verbatim from WordPress** (`src/data/lastmod.ts`), not
+regenerated. A sitemap claiming every page changed at build time teaches Google
+to ignore the field. The two category archives carry none, faithfully:
+WordPress omits it from taxonomy sitemaps because a term has no modification
+date of its own.
+
+The image sitemap lists full-size files only, never the `-300x225` derivatives,
+so a thumbnail never competes with its own original. It emits `<image:loc>` and
+nothing else — Google deprecated `<image:caption>`, `<image:title>` and
+`<image:license>` in 2022 and ignores them.
+
+The old `/wp-sitemap*.xml` addresses are **not** served here. Keeping old
+addresses working is a redirect job at the Cloudflare edge, covering all of them
+at once, rather than something to reimplement piecemeal in the app.
+
+### robots.txt has a zone-level surprise
+
+The file in `public/robots.txt` is short. What the **custom domain** serves is
+~1900 bytes, because Cloudflare's *Managed robots.txt* is switched on for the
+zone and prepends a content-signals block that disallows AI crawlers
+(`ClaudeBot`, `GPTBot`, `CCBot`, `Google-Extended`, …).
+
+It sets `Content-Signal: search=yes` and `Allow: /`, so ordinary search
+indexing and these sitemaps are unaffected. Two things to know anyway:
+
+- `workers.dev` does **not** get the block — it is not in a zone. So the two
+  hostnames genuinely serve different `robots.txt`, and neither is a bug.
+- The same injection will apply to `boldeimaging.com` once it is attached to a
+  Cloudflare zone. If the client wants AI crawlers allowed, that is a zone
+  setting, not a repo change.
+
+`Crawl-delay: 30` is carried from the original WordPress `robots.txt`. Google
+ignores it; Bing honours it, and 30 seconds is slow for a 19-page site. Kept
+because it is what the original served — worth revisiting deliberately.
+
 ### Image store
 
 Every image and the hero video also live in Backblaze B2, bucket
