@@ -1,0 +1,13 @@
+# Cloudflare serves .xsl as application/xml, derived from the extension.
+#
+# Chromium applies the sitemap stylesheet at that type -- verified -- but the
+# content type browsers are actually documented to accept for XSLT is text/xsl
+# (or application/xslt+xml), and this could not be tested in Firefox or Safari
+# from the build environment. Setting it explicitly costs nothing and removes
+# the question.
+#
+# The Astro Cloudflare adapter appends its own /_astro/* immutable rule to this
+# file during the build; both end up in dist/client/_headers.
+/sitemap.xsl
+  Content-Type: text/xsl; charset=utf-8
+  Cache-Control: public, max-age=3600

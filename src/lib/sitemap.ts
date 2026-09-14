@@ -51,7 +51,17 @@ export interface UrlEntry {
   images?: string[];
 }
 
-const HEAD = '<?xml version="1.0" encoding="UTF-8"?>\n';
+/**
+ * The xml-stylesheet instruction makes these render as a readable page in a
+ * browser instead of a raw XML tree — the same thing WordPress did with
+ * wp-sitemap.xsl, so opening a sitemap by hand still shows something useful.
+ *
+ * It is a processing instruction, which every XML parser ignores, so crawlers
+ * receive exactly the document they did before. Presentation only.
+ */
+const HEAD =
+  '<?xml version="1.0" encoding="UTF-8"?>\n' +
+  '<?xml-stylesheet type="text/xsl" href="/sitemap.xsl"?>\n';
 const NS = 'http://www.sitemaps.org/schemas/sitemap/0.9';
 const IMG_NS = 'http://www.google.com/schemas/sitemap-image/1.1';
 

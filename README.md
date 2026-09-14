@@ -271,6 +271,28 @@ so a thumbnail never competes with its own original. It emits `<image:loc>` and
 nothing else — Google deprecated `<image:caption>`, `<image:title>` and
 `<image:license>` in 2022 and ignores them.
 
+**The sitemaps render as a page in a browser**, not as a raw XML tree.
+`public/sitemap.xsl` is an XSLT 1.0 stylesheet pulled in by an
+`<?xml-stylesheet?>` instruction — the same thing WordPress did with
+`wp-sitemap.xsl`, so opening one by hand still shows something readable. The
+index draws the set as a diagram (root, spine, a clickable card per child, each
+saying what it holds); a leaf sitemap draws a striped table of clickable
+addresses, with an images column where there is one.
+
+It is presentation only: a processing instruction is ignored by every XML
+parser, so crawlers see byte-for-byte the document they saw before. Verified —
+all five still parse with the same root and child counts.
+
+**`_headers` sets `Content-Type: text/xsl` for it, deliberately.** Cloudflare
+derives `application/xml` from the extension, and Chromium does apply the
+transform at that type (tested), but `text/xsl` is what browsers actually
+document for XSLT and Firefox and Safari could not be tested from the build
+environment. The explicit header costs nothing and removes the question. Note
+`public/_headers` is merged with the adapter's own `/_astro/*` immutable rule
+at build time; both survive.
+
+XSLT 1.0 because that is what browsers implement — none of them ship 2.0.
+
 The old `/wp-sitemap*.xml` addresses are **not** served here. Keeping old
 addresses working is a redirect job at the Cloudflare edge, covering all of them
 at once, rather than something to reimplement piecemeal in the app.
