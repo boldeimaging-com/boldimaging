@@ -5,18 +5,24 @@ import '../styles/icons.css';
 import '../styles/global.css';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
-import { media, SITE } from '../consts';
+import { media } from '../consts';
+import SEO from '../components/SEO.astro';
 
 interface Props {
   title: string;
-  description?: string;
+  /** Required. SEO.astro fails the build if it is missing or out of bounds. */
+  description: string;
+  /** Override the default social preview image for this page. */
+  ogImage?: string;
+  noindex?: boolean;
+  /** Page-specific JSON-LD, replacing the site-wide Organization graph. */
+  jsonld?: unknown;
   /** Home page only: the header sits over the hero and the page has no top gap. */
   bodyClass?: string;
 }
 
-const { title, description, bodyClass } = Astro.props as Props;
+const { title, description, ogImage, noindex, jsonld, bodyClass } = Astro.props as Props;
 const path = Astro.url.pathname;
-const canonical = new URL(path, Astro.site ?? 'https://boldeimaging.com').href;
 ---
 
 <!doctype html>
@@ -24,20 +30,18 @@ const canonical = new URL(path, Astro.site ?? 'https://boldeimaging.com').href;
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{title}</title>
-    {description && <meta name="description" content={description} />}
-    <link rel="canonical" href={canonical} />
-    <meta name="robots" content="max-image-preview:large" />
+    <SEO
+      title={title}
+      description={description}
+      ogImage={ogImage}
+      noindex={noindex}
+      jsonld={jsonld}
+    />
 
     <link rel="icon" href={media('2021/04/cropped-Bolde_logo_for_golf_revised_white-32x32.png')} sizes="32x32" />
     <link rel="icon" href={media('2021/04/cropped-Bolde_logo_for_golf_revised_white-192x192.png')} sizes="192x192" />
     <link rel="apple-touch-icon" href={media('2021/04/cropped-Bolde_logo_for_golf_revised_white-180x180.png')} />
     <meta name="msapplication-TileImage" content={media('2021/04/cropped-Bolde_logo_for_golf_revised_white-270x270.png')} />
-
-    <meta property="og:site_name" content={SITE.title} />
-    <meta property="og:title" content={title} />
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content={canonical} />
   </head>
   <body class={bodyClass}>
     <Header path={path} />

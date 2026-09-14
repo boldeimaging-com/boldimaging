@@ -180,6 +180,67 @@ It is a third-party script on the client's pages that nobody asked for —
 cookieless, but worth a deliberate decision rather than a surprise. Turn it off
 in Cloudflare under Web Analytics if it is not wanted.
 
+### SEO is enforced at build time, not audited later
+
+WordPress emitted metadata from a plugin. Astro emits nothing by default, so a
+migration silently loses every tag unless it is rebuilt — and nothing anywhere
+reports that it happened.
+
+```
+seo.config.ts                site-wide: canonical host, OG image, JSON-LD, tokens
+src/components/SEO.astro     every tag, one file, Zod-validated props
+src/lib/seo.ts               fitting page copy into a 160-char description
+bin/check-seo.mjs            lint over dist/client; runs in `npm run build`
+```
+
+**The build fails on bad metadata.** `SEO.astro` validates its props with Zod
+and throws, naming the page — a missing description, a title over 70, a
+description over 160. That is the structural replacement for the box Yoast put
+on every edit screen. It is props rather than a content collection because
+these are hand-ported Elementor layouts, not markdown with frontmatter;
+restructuring nineteen bespoke templates into collections buys nothing the
+schema does not already give.
+
+**`JSON.parse` on every JSON-LD block is the point of the lint.** Checking that
+the tag merely *exists* is the check that passes while Google discards the
+contents over a stray line break. The block is built with `JSON.stringify` from
+a real object, so an unescaped control character cannot occur by construction.
+Both failure modes are proven, not assumed: breaking a description and
+corrupting a block each fail the build.
+
+**What the harvest found, 2026-09-14, while the old site was still up:**
+
+```
+verification tokens ..... 0        JSON-LD blocks .......... 0
+analytics / tag systems . 0
+```
+
+The old site runs **no SEO plugin output at all**. Nothing was at risk of being
+lost, and every structured-data block here is therefore **generated, not
+carried** — the distinction the kit asks to be recorded. If a token is ever
+added before switch-off, it goes in `seo.config.ts` under `verification`.
+
+Current lint output:
+
+```
+  pages ............................. 20
+  JSON-LD blocks .................... 20
+  images with alt text .............. 187
+  images marked decorative .......... 54
+  images with no alt attribute ...... 0
+  failures .......................... 0
+```
+
+The 54 decorative images are the clients marquee's duplicated logos, which
+carry `alt=""` and `aria-hidden="true"` — correct, not a gap. A lint matching
+only `/\salt\s*=/` reports them as faults, because Astro emits the valueless
+form `alt`; this one distinguishes all three cases.
+
+**Not done: layer 6, the editor handover (Keystatic).** Nobody at the client
+can currently edit a meta description without a code change, and switching off
+WordPress removes the only place they can edit anything. That is a deliberate
+gap, not an oversight — it needs a decision and its own work.
+
 ### Sitemaps
 
 `/sitemap.xml` is a **sitemap index** — the one address `robots.txt` advertises.

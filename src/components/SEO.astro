@@ -1,0 +1,82 @@
+---
+/**
+ * Every SEO tag the site emits, in one file.
+ *
+ * On a site with nineteen bespoke pages this is the difference between one
+ * place to review and a nineteen-page audit — and it is why adding og:image
+ * later is a one-line change rather than nineteen.
+ *
+ * **The build fails on bad metadata, rather than deploying quietly.** That is
+ * the structural replacement for the red box Yoast put on every edit screen,
+ * and it is the highest-value part of this file.
+ *
+ * The kit specifies a Zod content-collection schema for that. Collections do
+ * not fit here: these pages are hand-ported Elementor layouts, not markdown
+ * with frontmatter, and restructuring nineteen bespoke templates into
+ * collections would be a large rewrite that buys nothing extra. The guarantee
+ * is what matters, not the mechanism, so the same Zod schema validates the
+ * props instead. A missing or over-long description throws during
+ * `astro build` exactly as a collection would.
+ */
+import { z } from 'astro/zod';
+import site from '../../seo.config';
+
+const schema = z.object({
+  // 60 is where Google truncates a title; under 10 is almost always a mistake.
+  title: z.string().min(10).max(70),
+  // 160 is the description cutoff. A longer one is not wrong, it is invisible.
+  description: z.string().min(50).max(160),
+  ogImage: z.string().url().optional(),
+  noindex: z.boolean().default(false),
+  /** Raw JSON-LD for this page, overriding the site-wide Organization graph. */
+  jsonld: z.unknown().optional(),
+});
+
+export type Props = z.input<typeof schema>;
+
+const canonical = new URL(Astro.url.pathname, Astro.site ?? site.siteUrl).href;
+
+const parsed = schema.safeParse(Astro.props);
+if (!parsed.success) {
+  // Name the page: "description: String must contain at least 50 character(s)"
+  // is useless on its own when nineteen pages could have produced it.
+  throw new Error(
+    `SEO metadata invalid for ${Astro.url.pathname}\n` +
+      parsed.error.issues.map((i) => `  ${i.path.join('.') || '(root)'}: ${i.message}`).join('\n'),
+  );
+}
+const { title, description, ogImage, noindex, jsonld } = parsed.data;
+
+const image = ogImage ?? site.defaultOgImage;
+const structured = jsonld ?? site.organizationJsonld;
+---
+
+<title>{title}</title>
+<meta name="description" content={description} />
+<link rel="canonical" href={canonical} />
+{noindex && <meta name="robots" content="noindex,follow" />}
+{!noindex && <meta name="robots" content="max-image-preview:large" />}
+
+<meta property="og:site_name" content="BolDe Imaging" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content={title} />
+<meta property="og:description" content={description} />
+<meta property="og:url" content={canonical} />
+<meta property="og:image" content={image} />
+<meta property="og:locale" content="en_CA" />
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content={title} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={image} />
+
+{site.verification.map((v) => <meta name={v.name} content={v.content} />)}
+
+{/*
+  Serialised here rather than hand-written as a string. A line break pasted
+  into a description is what silently broke the agency's own site for years:
+  Google discards the entire block on a parse error and reports nothing.
+  JSON.stringify cannot emit an unescaped control character, so that class of
+  failure is impossible by construction.
+*/}
+<script type="application/ld+json" is:inline set:html={JSON.stringify(structured)} />

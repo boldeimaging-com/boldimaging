@@ -10,6 +10,7 @@
 //   #c5d5ef7  sub-heading    Titillium 32/32 600 #808080
 //   #5ddb51e  copy           Titillium 15/22.5 400 #7A7A7A
 import Base from '../../layouts/Base.astro';
+import { metaDescription, describeListing } from '../../lib/seo';
 import { media } from '../../consts';
 import { PORTFOLIO } from '../../data/portfolio';
 
@@ -33,7 +34,11 @@ const { item, prev, next } = Astro.props as {
 };
 ---
 
-<Base title={`${item.title} – BolDe Imaging`} description={item.body || undefined}>
+<Base
+  title={`${item.title} – BolDe Imaging`}
+  description={metaDescription(item.body, describeListing(item.title))}
+  ogImage={new URL(media(item.image), Astro.site ?? 'https://boldeimaging.com').href}
+>
   <section class="title-row page-top">
     <div class="container title-row__inner">
       <div class="half">

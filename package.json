@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "astro dev",
-    "build": "node bin/fetch-gallery.mjs && astro build",
+    "build": "node bin/fetch-gallery.mjs && astro build && node bin/check-seo.mjs",
     "preview": "astro preview",
     "check": "astro check",
     "types": "wrangler types",
@@ -13,7 +13,8 @@
     "db:migrate": "wrangler d1 migrations apply boldeimaging-forms --remote",
     "db:migrate:local": "wrangler d1 migrations apply boldeimaging-forms --local",
     "db:list": "wrangler d1 migrations list boldeimaging-forms --remote",
-    "gallery:fetch": "node bin/fetch-gallery.mjs"
+    "gallery:fetch": "node bin/fetch-gallery.mjs",
+    "seo:lint": "node bin/check-seo.mjs"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.3.0",

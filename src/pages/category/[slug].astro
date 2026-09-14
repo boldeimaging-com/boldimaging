@@ -8,6 +8,7 @@
 // currently reach, and inventing a listing here would be a redesign, not a
 // port. Worth raising with the client separately.
 import Base from '../../layouts/Base.astro';
+import { describeListing } from '../../lib/seo';
 import ThemeArchive from '../../components/ThemeArchive.astro';
 
 export const prerender = true;
@@ -22,7 +23,10 @@ export function getStaticPaths() {
 const { name } = Astro.props as { name: string };
 ---
 
-<Base title={`${name} – BolDe Imaging`}>
+<Base
+  title={`${name} – BolDe Imaging`}
+  description={describeListing(`${name} signage`)}
+>
   <ThemeArchive>
     <Fragment slot="heading">Category: <span>{name}</span></Fragment>
   </ThemeArchive>
