@@ -155,6 +155,31 @@ npm run build && npx wrangler deploy -c dist/server/wrangler.json
 in a fixed order and ordering by an autoincrement id would quietly start lying
 the first time a row is replaced.
 
+### Live pages are 367 bytes bigger than the build, and that is Cloudflare
+
+Comparing a deployed page against `dist/` will show every HTML page larger by a
+constant ~367 bytes. Nothing is wrong with the deploy: the zone has **Cloudflare
+Web Analytics** switched on, and it injects
+
+```html
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/…"></script>
+```
+
+into every HTML response on the way out. It is added at the edge, so the origin
+bytes still match the build exactly.
+
+Two things that make this confusing to diagnose:
+
+- **It is not injected for plain `curl`.** Compare with a browser user-agent or
+  the pages look byte-identical and the difference seems to come and go.
+- **It is zone-level, not in this repo**, so nothing in the codebase explains
+  it, and it will apply to `boldeimaging.com` too once that domain sits on a
+  Cloudflare zone with the setting enabled.
+
+It is a third-party script on the client's pages that nobody asked for —
+cookieless, but worth a deliberate decision rather than a surprise. Turn it off
+in Cloudflare under Web Analytics if it is not wanted.
+
 ### Sitemaps
 
 `/sitemap.xml` is a **sitemap index** — the one address `robots.txt` advertises.
