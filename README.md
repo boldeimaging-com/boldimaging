@@ -283,6 +283,14 @@ It is presentation only: a processing instruction is ignored by every XML
 parser, so crawlers see byte-for-byte the document they saw before. Verified —
 all five still parse with the same root and child counts.
 
+**On a preview host the rendered links are repointed to that host**, by a small
+script in the stylesheet, with a banner saying so. The `<loc>` values must keep
+declaring `boldeimaging.com` — that is what a crawler reads and what the
+canonical tags agree with — but on `boldeimaging.10xid.com` every one of those
+links would otherwise walk a reviewer straight over to the *old WordPress
+site*. The script only runs in a browser, after the transform; crawlers never
+execute it, and on the production domain the origins match so it does nothing.
+
 **`_headers` sets `Content-Type: text/xsl` for it, deliberately.** Cloudflare
 derives `application/xml` from the extension, and Chromium does apply the
 transform at that type (tested), but `text/xsl` is what browsers actually

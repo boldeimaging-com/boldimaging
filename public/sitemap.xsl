@@ -101,6 +101,11 @@
         td.num { text-align: right; color: var(--muted); white-space: nowrap; }
         td.when { color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
 
+        .hostnote {
+          margin: 16px 0 0; padding: 10px 14px; font-size: 14px;
+          background: #fff8e6; border: 1px solid #f0dca4; border-radius: 6px;
+        }
+        .hostnote code { background: rgba(0,0,0,.05); padding: 1px 5px; border-radius: 3px; }
         .back { display: inline-block; margin-top: 28px; font-size: 14px; }
         footer { margin-top: 40px; color: var(--muted); font-size: 13px; }
 
@@ -116,12 +121,51 @@
     <body>
       <div class="bar"></div>
       <div class="wrap">
+        <p class="hostnote" id="hostnote" hidden="hidden"></p>
         <xsl:apply-templates select="s:sitemapindex | s:urlset" />
         <footer>
           Presentation only — crawlers read the same XML either way.
           <a href="https://www.sitemaps.org/protocol.html">About the sitemap protocol</a>.
         </footer>
       </div>
+      <script>
+        <![CDATA[
+        // The XML declares https://boldeimaging.com/... because that is what a
+        // crawler must be told, and what the canonical tags agree with. But on
+        // a preview host every one of those links would walk the reviewer over
+        // to the OLD WordPress site, which is worse than useless.
+        //
+        // So: rewrite the rendered links to whichever host this page is being
+        // viewed on, and say plainly that we have done it. The XML itself is
+        // untouched -- this only runs in a browser, after the transform, and a
+        // crawler never executes it. On the production domain the origins match
+        // and nothing below changes anything.
+        (function () {
+          var CANON = 'https://boldeimaging.com';
+          var here = window.location.origin;
+          if (here === CANON) return;
+
+          var links = document.querySelectorAll('a[href^="' + CANON + '"]');
+          for (var i = 0; i < links.length; i++) {
+            var a = links[i];
+            var moved = a.getAttribute('href').replace(CANON, here);
+            a.setAttribute('href', moved);
+            // Retext only the links whose label IS the URL, so the index cards
+            // keep their filename headings and descriptions intact.
+            if (a.textContent.trim().indexOf(CANON) === 0) a.textContent = moved;
+            var u = a.querySelector('.url');
+            if (u && u.textContent.trim().indexOf(CANON) === 0) u.textContent = moved;
+          }
+
+          var note = document.getElementById('hostnote');
+          note.innerHTML = 'Viewing on <code>' + here.replace(/^https?:\/\//, '') +
+            '</code>, so the ' + links.length + ' links below have been pointed here. ' +
+            'The XML itself still declares <code>boldeimaging.com</code> — that is what ' +
+            'crawlers read, and what the canonical tags match.';
+          note.removeAttribute('hidden');
+        })();
+        ]]>
+      </script>
     </body>
   </html>
 </xsl:template>
@@ -130,8 +174,8 @@
 <xsl:template match="s:sitemapindex">
   <h1>XML Sitemap</h1>
   <p class="lede">
-    The index for boldeimaging.com. It points at one sitemap per kind of page,
-    mirroring how the site was split under WordPress.
+    The index. It points at one sitemap per kind of page, mirroring how the
+    site was split under WordPress.
   </p>
   <p class="count">
     <strong><xsl:value-of select="count(s:sitemap)" /></strong>
@@ -168,8 +212,8 @@
 <xsl:template match="s:urlset">
   <h1>XML Sitemap</h1>
   <p class="lede">
-    Addresses in this sitemap. Every one is a page on boldeimaging.com — follow
-    any of them, or go back up to the index.
+    Every address in this sitemap. Follow any of them, or go back up to the
+    index.
   </p>
   <p class="count">
     <strong><xsl:value-of select="count(s:url)" /></strong>
