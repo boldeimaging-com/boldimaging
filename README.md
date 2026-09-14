@@ -215,6 +215,172 @@ indexing and these sitemaps are unaffected. Two things to know anyway:
 ignores it; Bing honours it, and 30 seconds is slow for a 19-page site. Kept
 because it is what the original served — worth revisiting deliberately.
 
+### Images: Backblaze B2, served through /img on this site
+
+Every image and the hero video live in Backblaze B2, bucket
+**`boldeimaging-img`** (public, lifecycle *keep only the last version*), 351
+files verified equal to `public/media/` by count, bytes and SHA-1. They are
+served by `src/pages/img/[...path].ts` at `/img/<uploads path>` — the site's
+own origin, not a second hostname.
+
+**Why not a second hostname.** Images were briefly served from
+`img-boldimaging.10xid.com`, a proxied CNAME to B2 with a transform rule
+prefixing `/file/boldeimaging-img`. It passed every check runnable from a build
+sandbox and was still broken in a real browser, on every page. Serving from the
+same origin removes the second certificate, the CNAME, the transform rule, and
+any dependence on the shared `10xid.com` zone — whose rules were clobbered once
+by another writer in a single afternoon. The DNS record and rule are left in
+place, unused, in case that route is ever worth retrying.
+
+**What actually broke it: Backblaze throttling.** B2 answers
+`{"code":"too_busy"}` with a 503 under burst load, and one page view asks for
+~66 objects at once. On a cold cache a large share of a page's images come back
+503 and render broken — everywhere, at once, which is the symptom that was
+reported. Three things address it, and all three matter:
+
+1. **Retry 503 with exponential backoff** (200/600/1400 ms), which is what
+   Backblaze asks for. Retrying immediately achieves nothing against a throttle.
+2. **Cache in `caches.default`**, so an object runs that gauntlet about once per
+   colo instead of on every view.
+3. **Fall back to the copy bundled in the Worker** when B2 still refuses. B2 can
+   keep throttling one hot object well past any backoff worth making a visitor
+   wait through. `public/media/` is deployed anyway, so the bytes are already
+   there; a `x-img-source: worker-assets-fallback` header marks when it happens.
+
+That last point is why **`public/media/` must stay committed**. It is not dead
+weight, it is the fallback path.
+
+**Two traps in the caching, both hit here.** `cacheKey` and `cacheTtlByStatus`
+on `fetch`'s `cf` option are Enterprise-only and are ignored *silently* on this
+plan. The plain `cacheTtl` that does work applies to every status — so a
+transient 503 got cached for a year under the upstream `f005.backblazeb2.com`
+URL, a key in Backblaze's zone that this account cannot purge. One image stayed
+broken for half an hour and no purge of `boldeimaging.10xid.com` could shift it.
+Hence `caches.default` with a key we own, and `CACHE_EPOCH` to invalidate the
+lot.
+
+**Traversal is checked per segment, not per substring.** A blanket
+`path.includes('..')` also rejects `…-SGH.1.1.0-1.1.1..jpg`, a real file in this
+bucket, which 404'd on the gallery page because of exactly that.
+
+```
+native origin   f005.backblazeb2.com              <- what the route fetches
+S3 endpoint     s3.us-east-005.backblazeb2.com    <- keys and SDKs only
+```
+
+Override the base for a build:
+
+```bash
+PUBLIC_MEDIA_BASE=/media npm run build                         # Worker copies only
+PUBLIC_MEDIA_BASE=https://img.boldeimaging.com npm run build    # at cutover
+```
+
+### Sitemaps
+
+`/sitemap.xml` is a **sitemap index** — the one address `robots.txt` advertises.
+Its children mirror how WordPress split this site, so the shape Google has
+crawled for years survives the migration:
+
+| New | Replaces | Contents |
+|---|---|---|
+| `sitemap-pages.xml` | `wp-sitemap-posts-page-1.xml` | 5 pages |
+| `sitemap-portfolio.xml` | `wp-sitemap-posts-portfolio-1.xml` | 12 portfolio entries |
+| `sitemap-categories.xml` | `wp-sitemap-taxonomies-category-1.xml` | 2 category archives |
+| `sitemap-images.xml` | *(no counterpart)* | 195 images across 15 pages |
+
+All generated from the same data modules the pages render from, so adding a
+portfolio entry or a gallery image updates the sitemaps with nothing else to
+remember. Addresses resolve against `site` in `astro.config.mjs` — the real
+domain, never the preview hostname, since a sitemap full of `*.workers.dev`
+addresses is worthless to a crawler.
+
+**`lastmod` is carried verbatim from WordPress** (`src/data/lastmod.ts`), not
+regenerated. A sitemap claiming every page changed at build time teaches Google
+to ignore the field. The two category archives carry none, faithfully:
+WordPress omits it from taxonomy sitemaps because a term has no modification
+date of its own.
+
+The image sitemap lists full-size files only, never the `-300x225` derivatives,
+so a thumbnail never competes with its own original. It emits `<image:loc>` and
+nothing else — Google deprecated `<image:caption>`, `<image:title>` and
+`<image:license>` in 2022 and ignores them.
+
+The old `/wp-sitemap*.xml` addresses are **not** served here. Keeping old
+addresses working is a redirect job at the Cloudflare edge, covering all of them
+at once, rather than something to reimplement piecemeal in the app.
+
+### The preview is noindexed — at the edge, not in this repo
+
+`boldeimaging.10xid.com` returns `X-Robots-Tag: noindex, nofollow, noarchive`
+on every response. **This lives in Cloudflare, not in git**, so it is invisible
+here and needs recreating by hand if the zone is ever rebuilt:
+
+```
+zone     10xid.com
+ruleset  http_response_headers_transform ("default")
+rule     boldeimaging.10xid.com — noindex the preview (covers XML/PDF, which meta cannot)
+expr     http.host eq "boldeimaging.10xid.com"
+action   rewrite → set X-Robots-Tag: noindex, nofollow, noarchive
+```
+
+**It is deliberately not a `<meta name="robots">` tag and not a `_headers`
+entry.** Both of those are properties of the build, and the build is what gets
+attached to `boldeimaging.com` at cutover — a noindex baked into either would
+quietly de-index the client's real site the day it goes live. Scoping it to the
+preview hostname at the edge means the production host can never inherit it.
+
+The header form also covers what a meta tag cannot: the sitemaps, the images
+and the 404 are all XML, binary or non-HTML, and none of them can carry a meta
+tag.
+
+**`robots.txt` must keep allowing crawlers, and does.** A `Disallow: /` would
+be counterproductive here: a crawler that is not allowed to fetch the page can
+never see the noindex header, and the address can still surface in results.
+Allow the crawl, refuse the index.
+
+`workers.dev` cannot carry this rule — it is not inside a zone, so no zone
+ruleset reaches it. That hostname is still fully indexable; the canonical tags
+pointing at `boldeimaging.com` are all that protect it. Turn it off with
+`"workers_dev": false` if that matters.
+
+**This rule has already been deleted once by something else.** `10xid.com` is a
+shared zone carrying several client previews, and the ruleset went from version
+3 to 9 in minutes while another client's rule replaced ours — the signature of a
+whole-ruleset `PUT` built from a stale read. Add rules with
+
+```
+POST /zones/{zone}/rulesets/{ruleset}/rules
+```
+
+which appends one rule and leaves the rest alone, never `PUT` on the ruleset.
+That protects other people's rules from us; it does not protect ours from them.
+**Re-check the header after any zone work**, and treat its absence as likely
+clobbering rather than a caching artefact:
+
+```bash
+curl -sSI https://boldeimaging.10xid.com/ | grep -i x-robots-tag
+```
+
+### robots.txt has a zone-level surprise
+
+The file in `public/robots.txt` is short. What the **custom domain** serves is
+~1900 bytes, because Cloudflare's *Managed robots.txt* is switched on for the
+zone and prepends a content-signals block that disallows AI crawlers
+(`ClaudeBot`, `GPTBot`, `CCBot`, `Google-Extended`, …).
+
+It sets `Content-Signal: search=yes` and `Allow: /`, so ordinary search
+indexing and these sitemaps are unaffected. Two things to know anyway:
+
+- `workers.dev` does **not** get the block — it is not in a zone. So the two
+  hostnames genuinely serve different `robots.txt`, and neither is a bug.
+- The same injection will apply to `boldeimaging.com` once it is attached to a
+  Cloudflare zone. If the client wants AI crawlers allowed, that is a zone
+  setting, not a repo change.
+
+`Crawl-delay: 30` is carried from the original WordPress `robots.txt`. Google
+ignores it; Bing honours it, and 30 seconds is slow for a 19-page site. Kept
+because it is what the original served — worth revisiting deliberately.
+
 ### Image store — live at img-boldimaging.10xid.com
 
 Every image and the hero video are served from Backblaze B2, bucket
