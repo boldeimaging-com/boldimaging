@@ -62,6 +62,53 @@ commit a lockfile produced by `npm install --omit=optional`: it strips the
 rolldown native binding and CI then fails with *"Cannot find native binding."*
 The committed lockfile carries all 15 `@rolldown/binding-*` platforms.
 
+### Forms and uploads: D1 is the record, email is the notification
+
+`/contact/` and `/ftp/` both write to the D1 database **`boldeimaging-forms`**
+(binding `DB`) *before* attempting delivery. That ordering is the whole point:
+before it existed, a Resend outage — or simply the unset API key the site has
+right now — meant a submission was read off the wire and dropped, with nobody
+aware a customer had written in.
+
+```bash
+npm run db:migrate        # apply migrations/*.sql to the remote database
+npm run db:migrate:local  # same, against the local dev database
+npm run db:list           # which migrations have been applied
+```
+
+| Table | One row per |
+|---|---|
+| `contact_submissions` | enquiry from `/contact/` |
+| `ftp_uploads` | upload batch from `/ftp/` |
+| `ftp_upload_files` | file that actually landed in R2 |
+
+**Two status columns on `ftp_uploads`, not one.** `upload_status` covers the
+files reaching R2; `delivery_status` covers the rep being told. Files safe in
+storage with the notification lost is recoverable and has to look different
+from a clean success. A row still reading `receiving` or `pending` means the
+handler died mid-flight, which is a different fault from `failed`.
+
+**A database failure never costs a submission either.** Every helper in
+`src/lib/submissions.ts` swallows its own error and reports it on an
+`x-record-error` response header rather than throwing — refusing a customer's
+enquiry because our logging is down would be the worse outage. Check that
+header when a submission seems to have vanished.
+
+**No IP addresses are stored**, only `cf-ipcountry` and the user agent. The IP
+is personal data under PIPEDA, it is not needed to answer an enquiry, and
+country plus user agent separates bot floods from real people well enough. Add
+it only if rate limiting genuinely needs it.
+
+`database_id` is committed in `wrangler.jsonc` deliberately — it is an
+identifier, useless without account credentials, and Wrangler needs it at build
+time.
+
+Note that `/api/*` is protected by Astro's CSRF check, so a POST without a
+matching `Origin` header gets `403 Cross-site POST form submissions are
+forbidden`. That is not the WAF, and it is not a bug — both forms post
+same-origin to a **trailing-slash** action (`/api/contact/`), which also avoids
+a 308 redirect that would re-send a 350 MB upload.
+
 ### Sitemaps
 
 `/sitemap.xml` is a **sitemap index** — the one address `robots.txt` advertises.

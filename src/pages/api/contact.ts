@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 // Worker bindings and secrets. `Astro.locals.runtime.env` was removed in
 // Astro 6; this is the supported way to read them.
 import { env } from 'cloudflare:workers';
+import { recordContact, requestContext, setDelivery } from '../../lib/submissions';
 
 /**
  * POST /api/contact — the /contact/ form.
@@ -9,9 +10,16 @@ import { env } from 'cloudflare:workers';
  * This is the only on-demand route on the site (every page is prerendered);
  * it is the reason the Cloudflare adapter is in astro.config.mjs at all.
  *
+ * Every submission is written to D1 BEFORE delivery is attempted, so the
+ * enquiry survives a Resend outage or an unset key -- the email is the
+ * notification, the row is the record. A D1 failure is reported on the
+ * response headers but never fails the request: refusing a customer's enquiry
+ * because our logging is down would be the worse outage.
+ *
  * Delivery is wired at gate 11 of the migration. Until RESEND_API_KEY and
  * CONTACT_TO are set as Worker secrets, this answers 503 with a message the
- * form shows the visitor, rather than swallowing the submission silently.
+ * form shows the visitor -- but the row is already saved by then, so nothing
+ * is lost while that is outstanding.
  */
 export const prerender = false;
 
@@ -19,12 +27,21 @@ interface Env {
   RESEND_API_KEY?: string;
   CONTACT_TO?: string;
   CONTACT_FROM?: string;
+  DB?: D1Database;
 }
 
-const json = (status: number, message: string) =>
+/**
+ * `dbError` rides on a header rather than in the body: the visitor should never
+ * read about our storage layer, but the failure must be visible to anyone
+ * looking at the response.
+ */
+const json = (status: number, message: string, dbError?: string | null) =>
   new Response(JSON.stringify({ message }), {
     status,
-    headers: { 'content-type': 'application/json; charset=utf-8' },
+    headers: {
+      'content-type': 'application/json; charset=utf-8',
+      ...(dbError ? { 'x-record-error': dbError.slice(0, 200) } : {}),
+    },
   });
 
 function text(form: FormData, key: string, max = 5000): string {
@@ -37,6 +54,7 @@ const esc = (s: string) =>
 
 export const POST: APIRoute = async ({ request }) => {
   const secrets = env as unknown as Env;
+  const db = secrets.DB;
 
   let form: FormData;
   try {
@@ -67,17 +85,37 @@ export const POST: APIRoute = async ({ request }) => {
   ];
 
   const attachment = form.get('attachment');
+  let attachmentName: string | null = null;
+  let attachmentBytes: number | null = null;
   if (attachment instanceof File && attachment.size > 0) {
     if (attachment.size > 10 * 1024 * 1024) {
       return json(413, 'That attachment is over the 10 MB limit.');
     }
+    attachmentName = attachment.name;
+    attachmentBytes = attachment.size;
     fields.push(['Attachment', `${attachment.name} (${Math.round(attachment.size / 1024)} KB)`]);
   }
 
+  // Record first. Everything below here can fail without losing the enquiry.
+  const { country, userAgent } = requestContext(request);
+  const record = await recordContact(db, {
+    name,
+    lastName: text(form, 'last_name', 200),
+    email,
+    website: text(form, 'website', 500),
+    message,
+    attachmentName,
+    attachmentBytes,
+    country,
+    userAgent,
+  });
+
   if (!secrets.RESEND_API_KEY || !secrets.CONTACT_TO) {
+    await setDelivery(db, 'contact_submissions', record.id, 'unconfigured');
     return json(
       503,
-      'The contact form is not connected yet. Please email info@boldeimaging.com or call (416) 241 2800.'
+      'The contact form is not connected yet. Please email info@boldeimaging.com or call (416) 241 2800.',
+      record.error
     );
   }
 
@@ -102,8 +140,25 @@ export const POST: APIRoute = async ({ request }) => {
   });
 
   if (!res.ok) {
-    return json(502, 'Sorry, that could not be sent. Please try again or email us directly.');
+    await setDelivery(db, 'contact_submissions', record.id, 'failed', {
+      error: `resend ${res.status}: ${(await res.text().catch(() => '')).slice(0, 300)}`,
+    });
+    return json(
+      502,
+      'Sorry, that could not be sent. Please try again or email us directly.',
+      record.error
+    );
   }
 
-  return json(200, 'Thanks — your message has been sent. We will be in touch shortly.');
+  const resendId = await res
+    .json<{ id?: string }>()
+    .then((b) => b?.id)
+    .catch(() => undefined);
+  await setDelivery(db, 'contact_submissions', record.id, 'sent', { resendId });
+
+  return json(
+    200,
+    'Thanks — your message has been sent. We will be in touch shortly.',
+    record.error
+  );
 };

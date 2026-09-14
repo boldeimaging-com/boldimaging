@@ -21,6 +21,21 @@
     "html_handling": "auto-trailing-slash"
   },
 
+  // Contact enquiries and /ftp/ upload records. The email is the
+  // notification; this is the record -- see migrations/0001_forms.sql.
+  //
+  // database_id is an identifier, not a secret: it is useless without account
+  // credentials, and Wrangler needs it at build time, so it belongs in version
+  // control rather than in a Worker secret.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "boldeimaging-forms",
+      "database_id": "ebc4c786-bf6b-4b66-ba8b-4bf2a7c5ff7a",
+      "migrations_dir": "migrations"
+    }
+  ],
+
   // Reviewed at boldeimaging.10xid.com, in the studio's own 10xid.com zone --
   // NOT on the client's domain, which stays untouched until cutover.
   //

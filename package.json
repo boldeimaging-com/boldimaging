@@ -9,7 +9,10 @@
     "preview": "astro preview",
     "check": "astro check",
     "types": "wrangler types",
-    "deploy": "astro build && wrangler deploy -c dist/server/wrangler.json"
+    "deploy": "astro build && wrangler deploy -c dist/server/wrangler.json",
+    "db:migrate": "wrangler d1 migrations apply boldeimaging-forms --remote",
+    "db:migrate:local": "wrangler d1 migrations apply boldeimaging-forms --local",
+    "db:list": "wrangler d1 migrations list boldeimaging-forms --remote"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.3.0",
