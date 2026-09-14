@@ -215,28 +215,59 @@ indexing and these sitemaps are unaffected. Two things to know anyway:
 ignores it; Bing honours it, and 30 seconds is slow for a 19-page site. Kept
 because it is what the original served — worth revisiting deliberately.
 
-### Image store
+### Image store — live at img-boldimaging.10xid.com
 
-Every image and the hero video also live in Backblaze B2, bucket
-**`boldeimaging-img`** (public, lifecycle *keep only the last version*), holding
-the same 351 files as `public/media/` — verified equal by count, bytes and SHA-1.
+Every image and the hero video are served from Backblaze B2, bucket
+**`boldeimaging-img`** (public, lifecycle *keep only the last version*), through
+Cloudflare at **`img-boldimaging.10xid.com`**. 351 files, verified equal to
+`public/media/` by count, bytes and SHA-1.
+
+Three pieces, all required:
+
+```
+DNS        CNAME img-boldimaging.10xid.com -> f005.backblazeb2.com, PROXIED
+rule       http_request_transform, zone 10xid.com:
+             http.host eq "img-boldimaging.10xid.com"
+             -> concat("/file/boldeimaging-img", http.request.uri.path)
+code       MEDIA_BASE in src/consts.ts
+```
+
+**The transform rule is not optional and is not merely cosmetic.** B2 serves at
+`/file/<bucket>/<path>`, so without the rewrite every request 404s — and the
+rewrite is also what *scopes* the hostname to one bucket. A request for
+`/file/briansmasonry-img/…` through this host becomes
+`/file/boldeimaging-img/file/briansmasonry-img/…` and 404s, so the hostname
+cannot be used to read another client's bucket.
 
 Two addresses that look alike and are not interchangeable:
 
 ```
-native origin   f005.backblazeb2.com              <- the CNAME target for img.boldeimaging.com
+native origin   f005.backblazeb2.com              <- the CNAME target
 S3 endpoint     s3.us-east-005.backblazeb2.com    <- keys and SDKs only
 ```
 
 Using the S3 endpoint as the CNAME target is the usual failure, and it fails
 confusingly.
 
-**The site does not use the bucket yet, and must never reference
-`*.backblazeb2.com` directly** — that would bill the client for every image
-view instead of going through Cloudflare. Images are served from the Worker's
-own assets today. Switching them to `img.boldeimaging.com` needs the DNS
-cutover first (the zone is still pending), then a CNAME to the native origin
-plus the transform rule that scopes it to this one bucket.
+**The site must never reference `*.backblazeb2.com` directly** — that bills the
+client for every image view instead of going through Cloudflare. Everything
+goes through `media()` and therefore `MEDIA_BASE`; nothing hardcodes a host.
+
+`public/media/` is still committed and still deployed with the Worker, ~50 MB
+that nothing now references. It is kept deliberately as the escape hatch: if
+the bucket or the CNAME breaks, `PUBLIC_MEDIA_BASE=/media npm run build` puts
+the images back on the Worker in one step. Delete it only once the image host
+has been stable for a while, and drop that override from `consts.ts` at the
+same time.
+
+At cutover this becomes `img.boldeimaging.com` — a CNAME to the same native
+origin, the same transform rule scoped to the new hostname, and
+`PUBLIC_MEDIA_BASE` (or the committed default) changed to match. The client's
+own zone is still pending, which is why the studio hostname is in use for now.
+
+Note that B2 rate-limits: verifying all 201 sitemap images at 16-way
+concurrency produced one spurious 503 that returned 200 on every retry. Use
+modest concurrency and retry 5xx before believing a failure.
 
 ### Where it is reviewed
 

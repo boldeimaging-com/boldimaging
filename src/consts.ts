@@ -2,15 +2,29 @@
  * Site-wide constants.
  *
  * MEDIA_BASE is the single place every image and the hero video resolve
- * through. It defaults to `/media`, which is served out of `public/media` in
- * this repo -- so a build has zero references to the old WordPress server.
+ * through -- pages, components and the image sitemap all go via `media()`.
  *
- * When the Backblaze bucket is live behind Cloudflare (gates 4-7 of the
- * migration), set PUBLIC_MEDIA_BASE=https://img.boldeimaging.com at build time
- * and every reference moves with it. Nothing else needs editing.
+ * It now points at the Backblaze B2 bucket `boldeimaging-img`, served through
+ * Cloudflare at img-boldimaging.10xid.com (a proxied CNAME to
+ * f005.backblazeb2.com plus a transform rule that prefixes /file/boldeimaging-img
+ * and so scopes the hostname to that one bucket).
+ *
+ * The value is committed rather than left to PUBLIC_MEDIA_BASE in a .env,
+ * because .env is gitignored: a CI build would silently fall back to the
+ * default, and a default of `/media` would quietly serve images from the
+ * Worker again with nothing to show it had happened.
+ *
+ * Override for a specific build with PUBLIC_MEDIA_BASE:
+ *
+ *   PUBLIC_MEDIA_BASE=/media npm run build                    # Worker's own copies
+ *   PUBLIC_MEDIA_BASE=https://img.boldeimaging.com npm run build   # at cutover
+ *
+ * The client's own img.boldeimaging.com cannot be used yet: that zone is still
+ * pending on Cloudflare.
  */
 export const MEDIA_BASE: string =
-  import.meta.env.PUBLIC_MEDIA_BASE?.replace(/\/$/, '') || '/media';
+  import.meta.env.PUBLIC_MEDIA_BASE?.replace(/\/$/, '') ||
+  'https://img-boldimaging.10xid.com';
 
 /** Resolve an uploads-relative path, e.g. `2021/04/tribute14.jpg`. */
 export function media(path: string): string {
