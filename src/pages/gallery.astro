@@ -14,9 +14,15 @@
 // does, because a filter change reflows them.
 import Base from '../layouts/Base.astro';
 import { media } from '../consts';
-import { GALLERY_FILTERS, GALLERY_ITEMS } from '../data/gallery';
+import { loadGallery } from '../lib/gallery-source';
 
 export const prerender = true;
+
+// Read at build time from D1, falling back to src/data/gallery.ts when the
+// database cannot be reached. The page stays static either way; see
+// src/lib/gallery-source.ts for why the fallback exists.
+const { filters: GALLERY_FILTERS, items: GALLERY_ITEMS, source } = loadGallery();
+console.log(`[gallery] ${GALLERY_ITEMS.length} items, ${GALLERY_FILTERS.length} filters, from ${source}`);
 ---
 
 <Base

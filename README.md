@@ -81,6 +81,8 @@ npm run db:list           # which migrations have been applied
 | `contact_submissions` | enquiry from `/contact/` |
 | `ftp_uploads` | upload batch from `/ftp/` |
 | `ftp_upload_files` | file that actually landed in R2 |
+| `gallery_filters` | filter tab on `/gallery/` (12) |
+| `gallery_items` | image in the gallery (116) |
 
 **Two status columns on `ftp_uploads`, not one.** `upload_status` covers the
 files reaching R2; `delivery_status` covers the rep being told. Files safe in
@@ -108,6 +110,50 @@ matching `Origin` header gets `403 Cross-site POST form submissions are
 forbidden`. That is not the WAF, and it is not a bug — both forms post
 same-origin to a **trailing-slash** action (`/api/contact/`), which also avoids
 a 308 redirect that would re-send a 350 MB upload.
+
+### The gallery lives in D1, and is read at build time
+
+`gallery_items` and `gallery_filters` are the source of truth for `/gallery/`.
+`src/data/gallery.ts` remains committed as the seed they were loaded from and
+as the fallback.
+
+```
+bin/fetch-gallery.mjs   runs BEFORE astro build (see the `build` script)
+   -> src/data/gallery.d1.json   (gitignored, regenerated every build)
+src/lib/gallery-source.ts  prefers that file, else src/data/gallery.ts
+```
+
+**The page stays prerendered.** Editing the database changes the site on the
+next build, not on every request — the gallery changes perhaps twice a year and
+does not justify a Worker invocation per view.
+
+**The D1 read is a separate Node step, not a query in the .astro page, and that
+is a security boundary rather than a style choice.** Page rendering happens
+inside workerd, where `process.env` is empty, so the only token reachable from a
+page is `import.meta.env` — and Vite *inlines* those values into the emitted
+server bundle, which is deployed to the Worker. Querying D1 from the page would
+have shipped a Cloudflare API token to production. The prebuild script reads it
+in plain Node. Verified: zero occurrences of the token, of
+`CLOUDFLARE_API_TOKEN`, or of `api.cloudflare.com` anywhere in `dist/`.
+
+**A build without credentials still works** — a fresh clone, or CI before the
+token is set — and falls back to the committed module. Both paths are verified
+to produce byte-identical HTML, which is what makes the fallback trustworthy
+rather than merely present. Each build logs which source it used; a stale
+gallery is only dangerous if nobody notices. A failed refresh deletes any stale
+`gallery.d1.json` rather than leaving yesterday's rows looking fresh.
+
+To change the gallery, write to D1 and rebuild:
+
+```bash
+npx wrangler d1 execute boldeimaging-forms --remote \
+  --command "UPDATE gallery_items SET title = 'New title' WHERE id = 42"
+npm run build && npx wrangler deploy -c dist/server/wrangler.json
+```
+
+`position` is explicit rather than implied by `id`, because the gallery renders
+in a fixed order and ordering by an autoincrement id would quietly start lying
+the first time a row is replaced.
 
 ### Sitemaps
 
