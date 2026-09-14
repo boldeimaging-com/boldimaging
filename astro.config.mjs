@@ -10,8 +10,33 @@ import cloudflare from '@astrojs/cloudflare';
 // injecting a SESSION KV namespace and an IMAGES binding into the deploy
 // config -- this site uses neither, and an unresolved KV binding fails the
 // deploy.
+/**
+ * The site's own address. Everything derived from it moves together: the
+ * canonical tags, og:url, and every <loc> in the sitemaps.
+ *
+ * *** AT CUTOVER, CHANGE THIS TO https://boldeimaging.com ***
+ *
+ * It points at the preview host today because that is where the site actually
+ * lives. With the production domain here, the sitemap listed
+ * boldeimaging.com addresses -- so opening the sitemap on the preview and
+ * clicking anything took you to the OLD WordPress site, which made the sitemap
+ * useless for reviewing the new one.
+ *
+ * The cost is that the preview no longer canonicalises to the production
+ * domain. That is acceptable here and only here: the preview is kept out of
+ * search by an X-Robots-Tag header at the Cloudflare edge, which is stronger
+ * than a canonical hint, and `npm run build` prints the origin it used so this
+ * cannot drift unnoticed.
+ *
+ * Override per build without editing the file:  SITE_URL=... npm run build
+ */
+const SITE_URL =
+  globalThis.process?.env?.SITE_URL || 'https://boldeimaging.10xid.com';
+
+console.log(`[site] building for ${SITE_URL}`);
+
 export default defineConfig({
-  site: 'https://boldeimaging.com',
+  site: SITE_URL,
   adapter: cloudflare({ imageService: 'passthrough' }),
   session: false,
   // 'ignore', not 'always'. Pages are still BUILT and LINKED with trailing

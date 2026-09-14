@@ -256,9 +256,28 @@ crawled for years survives the migration:
 
 All generated from the same data modules the pages render from, so adding a
 portfolio entry or a gallery image updates the sitemaps with nothing else to
-remember. Addresses resolve against `site` in `astro.config.mjs` — the real
-domain, never the preview hostname, since a sitemap full of `*.workers.dev`
-addresses is worthless to a crawler.
+remember.
+
+**Every address comes from `site` in `astro.config.mjs`, and it points at the
+preview host today.** *** AT CUTOVER, CHANGE IT TO `https://boldeimaging.com`.
+***
+
+That one value drives the sitemaps, the canonical tags and `og:url` together,
+which is the point: with the production domain set while the site lives on the
+preview, the sitemaps listed `boldeimaging.com` addresses, so opening a sitemap
+and clicking anything took you to the **old WordPress site** rather than the
+build you were reviewing.
+
+The cost is that the preview no longer canonicalises to the production domain.
+Acceptable here and only here — the preview is kept out of search by an
+`X-Robots-Tag` header at the edge, which is stronger than a canonical hint. Two
+things stop this drifting unnoticed: every build prints `[site] building for …`,
+and the SEO lint **fails** if any sitemap `<loc>` uses an origin the pages do
+not canonicalise to. A site that canonicalises to addresses its own sitemap
+does not list is the classic way to waste a migration, and it is invisible
+without that check.
+
+Override for one build without editing the file: `SITE_URL=… npm run build`.
 
 **`lastmod` is carried verbatim from WordPress** (`src/data/lastmod.ts`), not
 regenerated. A sitemap claiming every page changed at build time teaches Google

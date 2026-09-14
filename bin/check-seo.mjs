@@ -39,6 +39,15 @@ const need = {
   twitterCard: /<meta[^>]+name=["']twitter:card["']/i,
 };
 
+// Whatever origin the canonicals use, every sitemap <loc> must use the same
+// one. A site that canonicalises to addresses its own sitemap does not list is
+// the classic way to waste a migration, and it is invisible without a check.
+function canonicalOrigin(html) {
+  const m = html.match(/<link[^>]+rel=["']canonical["'][^>]+href=["'](https?:\/\/[^/"']+)/i);
+  return m ? m[1] : null;
+}
+const origins = new Set();
+
 const fails = [];
 let pages = 0,
   ld = 0,
@@ -54,6 +63,9 @@ for (const f of walk(dist)) {
   for (const [k, re] of Object.entries(need)) {
     if (!re.test(html)) fails.push([rel, `missing ${k}`]);
   }
+
+  const origin = canonicalOrigin(html);
+  if (origin) origins.add(origin);
 
   // A description over 160 is not invalid, but it is invisible past the cut,
   // so it is worth failing on rather than reporting.
@@ -86,8 +98,28 @@ for (const f of walk(dist)) {
   }
 }
 
+// Cross-check the sitemaps against the canonical origin.
+import { existsSync } from 'node:fs';
+const sitemapLocs = [];
+for (const f of ['sitemap.xml', 'sitemap-pages.xml', 'sitemap-portfolio.xml',
+                 'sitemap-categories.xml', 'sitemap-images.xml']) {
+  const path = join(dist, f);
+  if (!existsSync(path)) { fails.push([f, 'sitemap missing from the build']); continue; }
+  for (const m of readFileSync(path, 'utf8').matchAll(/<loc>(https?:\/\/[^/<]+)/g)) {
+    sitemapLocs.push(m[1]);
+  }
+}
+const sitemapOrigins = new Set(sitemapLocs);
+for (const o of sitemapOrigins) {
+  if (!origins.has(o)) {
+    fails.push(['sitemaps', `declare ${o} but pages canonicalise to ${[...origins].join(', ')}`]);
+  }
+}
+
 const p = (l, n) => console.log(`  ${l.padEnd(34, '.')} ${n}`);
 console.log('\nSEO LINT\n');
+p('origin', [...origins].join(', ') || '(none)');
+p('sitemap <loc> origins', [...sitemapOrigins].join(', ') || '(none)');
 p('pages', pages);
 p('JSON-LD blocks', ld);
 p('images with alt text', alt);

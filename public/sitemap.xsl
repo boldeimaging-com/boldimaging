@@ -141,7 +141,12 @@
         // crawler never executes it. On the production domain the origins match
         // and nothing below changes anything.
         (function () {
-          var CANON = 'https://boldeimaging.com';
+          // Derive the declared origin from the document rather than naming it:
+          // it is whatever <loc> says, which changes at cutover. Hard-coding it
+          // would leave this silently inert the moment the site moved.
+          var first = document.querySelector('table a[href^="http"], a.node[href^="http"]');
+          if (!first) return;
+          var CANON = new URL(first.getAttribute('href')).origin;
           var here = window.location.origin;
           if (here === CANON) return;
 
