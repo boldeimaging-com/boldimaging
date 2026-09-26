@@ -30,8 +30,12 @@ import cloudflare from '@astrojs/cloudflare';
  *
  * Override per build without editing the file:  SITE_URL=... npm run build
  */
+// No @types/node in this project, so reach process through an explicit cast.
+/** @type {{ env?: Record<string, string | undefined> } | undefined} */
+const nodeProcess = /** @type {any} */ (globalThis).process;
+
 const SITE_URL =
-  globalThis.process?.env?.SITE_URL || 'https://boldeimaging.10xid.com';
+  nodeProcess?.env?.SITE_URL || 'https://boldeimaging.10xid.com';
 
 console.log(`[site] building for ${SITE_URL}`);
 
