@@ -38,6 +38,7 @@ const path = Astro.url.pathname;
       jsonld={jsonld}
     />
 
+    <slot name="head" />
     <link rel="icon" href={media('2021/04/cropped-Bolde_logo_for_golf_revised_white-32x32.png')} sizes="32x32" />
     <link rel="icon" href={media('2021/04/cropped-Bolde_logo_for_golf_revised_white-192x192.png')} sizes="192x192" />
     <link rel="apple-touch-icon" href={media('2021/04/cropped-Bolde_logo_for_golf_revised_white-180x180.png')} />

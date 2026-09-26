@@ -41,7 +41,7 @@
   --page-title-grey: #808080; /* every page's 40px title */
   --about-grey: #777777; /* "About Us." heading + copy */
   --cyan: #00aeef; /* contact submit, portfolio nav arrows */
-  --blue-hover: #1d9ff2; /* "All Galleries" button hover */
+  --blue-hover: #005a9c; /* "All Galleries" hover; white text ~7:1 (was #1d9ff2, 2.9:1) */
   --band-bebolde: #363636;
   --band-bebolde-overlay: #2a2a2a;
   --band-galleries: #454545;

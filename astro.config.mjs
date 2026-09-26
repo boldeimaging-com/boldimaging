@@ -24,14 +24,19 @@ import cloudflare from '@astrojs/cloudflare';
  *
  * The cost is that the preview no longer canonicalises to the production
  * domain. That is acceptable here and only here: the preview is kept out of
- * search by an X-Robots-Tag header at the Cloudflare edge, which is stronger
+ * search by an X-Robots-Tag header at the Cloudflare edge plus an HTML noindex
+ * meta tag emitted in the page itself, both stronger
  * than a canonical hint, and `npm run build` prints the origin it used so this
  * cannot drift unnoticed.
  *
  * Override per build without editing the file:  SITE_URL=... npm run build
  */
+// No @types/node in this project, so reach process through an explicit cast.
+/** @type {{ env?: Record<string, string | undefined> } | undefined} */
+const nodeProcess = /** @type {any} */ (globalThis).process;
+
 const SITE_URL =
-  globalThis.process?.env?.SITE_URL || 'https://boldeimaging.10xid.com';
+  nodeProcess?.env?.SITE_URL || 'https://boldeimaging.10xid.com';
 
 console.log(`[site] building for ${SITE_URL}`);
 

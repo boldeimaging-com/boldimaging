@@ -33,7 +33,6 @@ const walk = (d) =>
 const need = {
   title: /<title[^>]*>([^<]{10,})<\/title>/i,
   description: /<meta[^>]+name=["']description["'][^>]+content=["']([^"']{50,})/i,
-  canonical: /<link[^>]+rel=["']canonical["'][^>]+href=["']https?:\/\/[^"']+/i,
   ogImage: /<meta[^>]+property=["']og:image["'][^>]+content=["']https?:\/\/[^"']+/i,
   ogDescription: /<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']{50,})/i,
   twitterCard: /<meta[^>]+name=["']twitter:card["']/i,
@@ -47,6 +46,9 @@ function canonicalOrigin(html) {
   return m ? m[1] : null;
 }
 const origins = new Set();
+// Preview builds (any origin but production) must be noindex with no canonical.
+let previewPages = 0, productionPages = 0;
+const PROD = /^https:\/\/(www\.)?boldeimaging\.com$/;
 
 const fails = [];
 let pages = 0,
@@ -65,7 +67,17 @@ for (const f of walk(dist)) {
   }
 
   const origin = canonicalOrigin(html);
-  if (origin) origins.add(origin);
+  const hasNoindex = /<meta[^>]+name=["']robots["'][^>]+content=["'][^"']*noindex/i.test(html);
+  if (origin) {
+    origins.add(origin);
+    productionPages++;
+    if (!PROD.test(origin)) fails.push([rel, `canonical ${origin} is not the production origin`]);
+    if (hasNoindex && rel !== '404.html') fails.push([rel, 'production page carries noindex']);
+  } else {
+    previewPages++;
+    if (!hasNoindex) fails.push([rel, 'no canonical (preview) but no noindex meta']);
+    if (/property=["']og:url["']/i.test(html)) fails.push([rel, 'preview page emits og:url']);
+  }
 
   // A description over 160 is not invalid, but it is invisible past the cut,
   // so it is worth failing on rather than reporting.
@@ -110,7 +122,19 @@ for (const f of ['sitemap.xml', 'sitemap-pages.xml', 'sitemap-portfolio.xml',
   }
 }
 const sitemapOrigins = new Set(sitemapLocs);
-for (const o of sitemapOrigins) {
+if (previewPages && productionPages) fails.push(['build', 'mixed preview and production pages']);
+// robots.txt must advertise the sitemap only on production.
+const robotsPath = join(dist, 'robots.txt');
+if (!existsSync(robotsPath)) fails.push(['robots.txt', 'missing from the build']);
+else {
+  const robots = readFileSync(robotsPath, 'utf8');
+  const line = robots.match(/^Sitemap:\s*(\S+)/im);
+  if (/^Disallow:\s*\//im.test(robots)) fails.push(['robots.txt', 'blocks crawling']);
+  if (productionPages && !line) fails.push(['robots.txt', 'production build must advertise the sitemap']);
+  if (previewPages && line) fails.push(['robots.txt', 'preview build must not advertise a sitemap']);
+  if (line && !line[1].startsWith([...sitemapOrigins][0] ?? '')) fails.push(['robots.txt', 'sitemap origin differs from sitemap <loc>']);
+}
+for (const o of productionPages ? sitemapOrigins : []) {
   if (!origins.has(o)) {
     fails.push(['sitemaps', `declare ${o} but pages canonicalise to ${[...origins].join(', ')}`]);
   }
@@ -121,6 +145,7 @@ console.log('\nSEO LINT\n');
 p('origin', [...origins].join(', ') || '(none)');
 p('sitemap <loc> origins', [...sitemapOrigins].join(', ') || '(none)');
 p('pages', pages);
+p('mode', productionPages ? 'production (indexable)' : 'preview (noindex)');
 p('JSON-LD blocks', ld);
 p('images with alt text', alt);
 p('images marked decorative', decorative);

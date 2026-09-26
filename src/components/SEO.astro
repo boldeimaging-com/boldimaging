@@ -20,6 +20,7 @@
  */
 import { z } from 'astro/zod';
 import site from '../../seo.config';
+import { isProductionSite } from '../lib/site-mode';
 
 const schema = z.object({
   // 60 is where Google truncates a title; under 10 is almost always a mistake.
@@ -34,7 +35,10 @@ const schema = z.object({
 
 export type Props = z.input<typeof schema>;
 
-const canonical = new URL(Astro.url.pathname, Astro.site ?? site.siteUrl).href;
+const production = isProductionSite(Astro.site);
+// Preview builds get no canonical at all (a staging canonical is wrong, and a
+// production one would point at the old WordPress site).
+const canonical = production ? new URL(Astro.url.pathname, Astro.site).href : undefined;
 
 const parsed = schema.safeParse(Astro.props);
 if (!parsed.success) {
@@ -45,7 +49,8 @@ if (!parsed.success) {
       parsed.error.issues.map((i) => `  ${i.path.join('.') || '(root)'}: ${i.message}`).join('\n'),
   );
 }
-const { title, description, ogImage, noindex, jsonld } = parsed.data;
+const { title, description, ogImage, jsonld } = parsed.data;
+const noindex = parsed.data.noindex || !production;
 
 const image = ogImage ?? site.defaultOgImage;
 const structured = jsonld ?? site.organizationJsonld;
@@ -53,7 +58,7 @@ const structured = jsonld ?? site.organizationJsonld;
 
 <title>{title}</title>
 <meta name="description" content={description} />
-<link rel="canonical" href={canonical} />
+{canonical && <link rel="canonical" href={canonical} />}
 {noindex && <meta name="robots" content="noindex,follow" />}
 {!noindex && <meta name="robots" content="max-image-preview:large" />}
 
@@ -61,7 +66,7 @@ const structured = jsonld ?? site.organizationJsonld;
 <meta property="og:type" content="website" />
 <meta property="og:title" content={title} />
 <meta property="og:description" content={description} />
-<meta property="og:url" content={canonical} />
+{canonical && <meta property="og:url" content={canonical} />}
 <meta property="og:image" content={image} />
 <meta property="og:locale" content="en_CA" />
 
