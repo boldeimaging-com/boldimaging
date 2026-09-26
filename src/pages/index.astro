@@ -37,17 +37,30 @@ import { media } from '../consts';
 import { ASSOCIATIONS, CLIENTS, HOME_BACKGROUNDS, PROJECT_GALLERIES } from '../data/home';
 
 export const prerender = true;
+
+// Served from the Worker's own static assets (/media), NOT media(): /img proxies
+// the Backblaze bucket, which does not contain this derived poster.
+const POSTER = '/media/2025/04/Bolde-Imaging-Video-poster.webp';
 ---
 
 <Base
-  title="BolDe Imaging"
+  title="Toronto Signage Manufacturer | BolDe Imaging"
   description="Your single destination for signage: 2D and 3D signs, channel letters, backlit signs, LED panels, banners, awnings, hoarding, wayfinding and fascia."
 >
+  <link
+    slot="head"
+    rel="preload"
+    as="image"
+    href={POSTER}
+    type="image/webp"
+    fetchpriority="high"
+  />
   <!-- #3d223f7 -->
   <section class="hero">
     <div class="hero__video">
       <video
         src={media('2025/04/Bolde-Imaging-Video.mp4')}
+        poster={POSTER}
         autoplay
         muted
         loop
@@ -483,7 +496,8 @@ export const prerender = true;
     display: inline-block;
     padding: 12px 24px;
     border-radius: 3px;
-    background-color: var(--e-global-color-6ad8614);
+    /* #0070bd: white text 5.3:1 (brand #018be3 was 3.6:1, failing WCAG AA) */
+    background-color: #0070bd;
     font-family: var(--font-button);
     font-size: 15px;
     line-height: 15px;
