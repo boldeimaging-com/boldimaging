@@ -24,7 +24,8 @@ import cloudflare from '@astrojs/cloudflare';
  *
  * The cost is that the preview no longer canonicalises to the production
  * domain. That is acceptable here and only here: the preview is kept out of
- * search by an X-Robots-Tag header at the Cloudflare edge, which is stronger
+ * search by an X-Robots-Tag header at the Cloudflare edge plus an HTML noindex
+ * meta tag emitted in the page itself, both stronger
  * than a canonical hint, and `npm run build` prints the origin it used so this
  * cannot drift unnoticed.
  *
