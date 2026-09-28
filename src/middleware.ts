@@ -27,8 +27,19 @@ const WORKERS_DEV = /(^|\.)workers\.dev$/;
 
 export const onRequest = defineMiddleware(async ({ url }, next) => {
   const response = await next();
-  if (WORKERS_DEV.test(url.hostname)) {
-    response.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
+  if (!WORKERS_DEV.test(url.hostname)) {
+    return response;
   }
-  return response;
+
+  // `response` can be a Cache API hit (e.g. the /img route's `cache.match`
+  // fast path) or another already-sealed Response whose `headers` are
+  // read-only; calling `.set` on those throws a TypeError and turns every
+  // cached image into a 500 on *.workers.dev. Wrapping it constructs a
+  // fresh, mutable Response with the same status/body/headers instead of
+  // mutating the original in place. This is a plain pass-through wrapper --
+  // it does not buffer the body -- so streaming and `Range`/206 responses
+  // are forwarded unchanged.
+  const mutable = new Response(response.body, response);
+  mutable.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
+  return mutable;
 });
