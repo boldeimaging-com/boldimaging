@@ -140,6 +140,34 @@ for (const o of productionPages ? sitemapOrigins : []) {
   }
 }
 
+// The workers.dev preview must carry an X-Robots-Tag on the responses the
+// HTML noindex meta tag cannot reach (robots.txt, the sitemaps, every static
+// image) -- see public/_headers. Checked here, not just by eye, because
+// Astro's build merges this file with the adapter's own /_astro/* rule and a
+// bad merge or a dropped block would otherwise only surface as a live
+// indexing regression, weeks later.
+const headersPath = join(dist, '_headers');
+if (!existsSync(headersPath)) {
+  fails.push(['_headers', 'missing from the build']);
+} else {
+  const headersTxt = readFileSync(headersPath, 'utf8');
+  const workersDevRule = /^https:\/\/[^\n]*workers\.dev\/\*\s*\n(?:[ \t]+[^\n]*\n?)*/im.exec(headersTxt);
+  if (!workersDevRule) {
+    fails.push(['_headers', 'no workers.dev rule found']);
+  } else if (!/X-Robots-Tag:\s*noindex/i.test(workersDevRule[0])) {
+    fails.push(['_headers', 'workers.dev rule does not set X-Robots-Tag: noindex']);
+  }
+  // The same block must never carry a bare /* or the production hostname --
+  // either would noindex boldeimaging.com the day this build is deployed
+  // there, which is exactly what scoping the rule to workers.dev is meant to
+  // prevent.
+  for (const m of headersTxt.matchAll(/^(https:\/\/\S*\*|\/\*)\s*\n(?:[ \t]+[^\n]*\n?)*/gim)) {
+    if (/X-Robots-Tag:\s*noindex/i.test(m[0]) && !/workers\.dev/i.test(m[0])) {
+      fails.push(['_headers', `X-Robots-Tag: noindex on a non-workers.dev rule (${m[1]}) would reach production`]);
+    }
+  }
+}
+
 const p = (l, n) => console.log(`  ${l.padEnd(34, '.')} ${n}`);
 console.log('\nSEO LINT\n');
 p('origin', [...origins].join(', ') || '(none)');
