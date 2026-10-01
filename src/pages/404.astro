@@ -1,7 +1,6 @@
 ---
-// Workers has no implicit 404 handling, so this page plus
-// `not_found_handling: "404-page"` in wrangler.jsonc is what serves unknown
-// addresses. Copy matches the live WordPress 404 exactly.
+// The Node adapter serves this prerendered page, with a 404 status, for any
+// address nothing else matches. Copy matches the live WordPress 404 exactly.
 import Base from '../layouts/Base.astro';
 import ThemeArchive from '../components/ThemeArchive.astro';
 

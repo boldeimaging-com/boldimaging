@@ -18,7 +18,7 @@ import { loadGallery } from '../lib/gallery-source';
 
 export const prerender = true;
 
-// Read at build time from D1, falling back to src/data/gallery.ts when the
+// Read at build time from Postgres, falling back to src/data/gallery.ts when the
 // database cannot be reached. The page stays static either way; see
 // src/lib/gallery-source.ts for why the fallback exists.
 const { filters: GALLERY_FILTERS, items: GALLERY_ITEMS, source } = loadGallery();

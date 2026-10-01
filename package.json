@@ -6,22 +6,26 @@
   "scripts": {
     "dev": "astro dev",
     "build": "node bin/fetch-gallery.mjs && astro build && node bin/check-seo.mjs",
-    "preview": "astro preview",
+    "start": "node server.mjs",
+    "preview": "npm run build && node server.mjs",
     "check": "astro check",
-    "types": "wrangler types",
-    "deploy": "astro build && wrangler deploy -c dist/server/wrangler.json",
-    "db:migrate": "wrangler d1 migrations apply boldeimaging-forms --remote",
-    "db:migrate:local": "wrangler d1 migrations apply boldeimaging-forms --local",
-    "db:list": "wrangler d1 migrations list boldeimaging-forms --remote",
+    "db:migrate": "node bin/migrate.mjs",
     "gallery:fetch": "node bin/fetch-gallery.mjs",
     "seo:lint": "node bin/check-seo.mjs"
   },
   "dependencies": {
-    "@astrojs/cloudflare": "^14.3.0",
-    "astro": "^7.3.1"
+    "@astrojs/node": "^11.1.6",
+    "astro": "^7.3.1",
+    "aws4fetch": "^1.0.20",
+    "pg": "^8.23.1"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
+    "@types/node": "^26.6.3",
+    "@types/pg": "^8.23.1",
     "typescript": "^6.0.3"
+  },
+  "engines": {
+    "node": ">=22.12.0"
   }
 }
