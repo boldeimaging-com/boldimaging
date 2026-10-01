@@ -24,8 +24,9 @@ import cloudflare from '@astrojs/cloudflare';
  *
  * The cost is that the preview no longer canonicalises to the production
  * domain. That is acceptable here and only here: the preview is kept out of
- * search by an X-Robots-Tag header at the Cloudflare edge plus an HTML noindex
- * meta tag emitted in the page itself, both stronger
+ * search by the workers.dev X-Robots-Tag rule in public/_headers (and
+ * src/middleware.ts for the on-demand routes) plus an HTML noindex meta tag
+ * emitted in the page itself, both stronger
  * than a canonical hint, and `npm run build` prints the origin it used so this
  * cannot drift unnoticed.
  *
@@ -36,7 +37,7 @@ import cloudflare from '@astrojs/cloudflare';
 const nodeProcess = /** @type {any} */ (globalThis).process;
 
 const SITE_URL =
-  nodeProcess?.env?.SITE_URL || 'https://boldeimaging.10xid.com';
+  nodeProcess?.env?.SITE_URL || 'https://boldimaging.ash-47a.workers.dev';
 
 console.log(`[site] building for ${SITE_URL}`);
 

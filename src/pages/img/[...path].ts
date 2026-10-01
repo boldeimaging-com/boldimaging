@@ -77,12 +77,16 @@ export const GET: APIRoute = async ({ params, request }) => {
   // to every status, which cached a transient Backblaze 503 for a year under
   // the upstream f005.backblazeb2.com URL -- a key in Backblaze's zone that
   // this account cannot purge. tribute14.jpg was stuck broken that way, and no
-  // amount of purging boldeimaging.10xid.com could shift it.
+  // amount of purging the site's own hostname could shift it.
   //
   // caches.default works on every plan, the key is a URL we own, and bumping
   // CACHE_EPOCH invalidates everything at once. Only successes are ever stored.
+  //
+  // The key is built on whatever origin served the request, so it follows the
+  // site from host to host instead of naming one. It used to hardcode
+  // boldeimaging.10xid.com, which was removed on 2026-10-01.
   const cache = (caches as unknown as { default: Cache }).default;
-  const cacheKey = new Request(`https://boldeimaging.10xid.com/__img/${CACHE_EPOCH}/${path}`);
+  const cacheKey = new Request(`${new URL(request.url).origin}/__img/${CACHE_EPOCH}/${path}`);
 
   // Range requests are served straight from the origin: a 206 is a partial
   // response and must never be stored as if it were the whole object.

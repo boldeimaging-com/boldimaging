@@ -20,8 +20,8 @@
 # an absolute https:// URL -- this is Cloudflare's own documented pattern for
 # exactly this case (developers.cloudflare.com/workers/static-assets/headers/
 # -- "Prevent your workers.dev URLs showing in search results"), not a repo
-# invention. It is scoped to *.workers.dev only: boldeimaging.com and
-# boldeimaging.10xid.com never match this pattern, so this rule cannot follow
+# invention. It is scoped to *.workers.dev only: boldeimaging.com never
+# matches this pattern, so this rule cannot follow
 # the build to production at cutover the way a bare /* rule or an HTML meta
 # tag would (see "The preview is noindexed" below for why that distinction
 # matters here).

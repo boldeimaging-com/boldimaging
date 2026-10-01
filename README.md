@@ -305,7 +305,7 @@ all five still parse with the same root and child counts.
 **On a preview host the rendered links are repointed to that host**, by a small
 script in the stylesheet, with a banner saying so. The `<loc>` values must keep
 declaring `boldeimaging.com` — that is what a crawler reads and what the
-canonical tags agree with — but on `boldeimaging.10xid.com` every one of those
+canonical tags agree with — but on the preview host every one of those
 links would otherwise walk a reviewer straight over to the *old WordPress
 site*. The script only runs in a browser, after the transform; crawlers never
 execute it, and on the production domain the origins match so it does nothing.
@@ -324,62 +324,38 @@ The old `/wp-sitemap*.xml` addresses are **not** served here. Keeping old
 addresses working is a redirect job at the Cloudflare edge, covering all of them
 at once, rather than something to reimplement piecemeal in the app.
 
-### The preview is noindexed — at the edge, not in this repo
+### The preview is noindexed
 
-`boldeimaging.10xid.com` returns `X-Robots-Tag: noindex, nofollow, noarchive`
-on every response. **This lives in Cloudflare, not in git**, so it is invisible
-here and needs recreating by hand if the zone is ever rebuilt:
+The only preview host is `boldimaging.ash-47a.workers.dev`. Every response it
+serves carries `X-Robots-Tag: noindex, nofollow, noarchive`, from two places in
+this repo that are both scoped to `*.workers.dev` by hostname:
 
-```
-zone     10xid.com
-ruleset  http_response_headers_transform ("default")
-rule     boldeimaging.10xid.com — noindex the preview (covers XML/PDF, which meta cannot)
-expr     http.host eq "boldeimaging.10xid.com"
-action   rewrite → set X-Robots-Tag: noindex, nofollow, noarchive
-```
+- `public/_headers` — every static file: the pages, `robots.txt`, the sitemaps
+  and the images.
+- `src/middleware.ts` — the three on-demand routes (`/api/contact`, `/api/ftp`,
+  `/img/...`), which `_headers` cannot reach.
 
-**It is deliberately not a `<meta name="robots">` tag and not a `_headers`
-entry.** Both of those are properties of the build, and the build is what gets
-attached to `boldeimaging.com` at cutover — a noindex baked into either would
-quietly de-index the client's real site the day it goes live. Scoping it to the
-preview hostname at the edge means the production host can never inherit it.
-
-The header form also covers what a meta tag cannot: the sitemaps, the images
-and the 404 are all XML, binary or non-HTML, and none of them can carry a meta
-tag.
+**Neither may ever be widened to a bare `/*` or "anything not production".**
+The build is what gets attached to `boldeimaging.com` at cutover, so a noindex
+that is not scoped to the preview hostname would quietly de-index the client's
+real site the day it goes live. The SEO lint fails the build if `_headers`
+carries a noindex on any rule other than the workers.dev one.
 
 **`robots.txt` must keep allowing crawlers, and does.** A `Disallow: /` would
 be counterproductive here: a crawler that is not allowed to fetch the page can
 never see the noindex header, and the address can still surface in results.
 Allow the crawl, refuse the index.
 
-`workers.dev` cannot carry this rule — it is not inside a zone, so no zone
-ruleset reaches it. That hostname is still fully indexable; the canonical tags
-pointing at `boldeimaging.com` are all that protect it. Turn it off with
-`"workers_dev": false` if that matters.
-
-**This rule has already been deleted once by something else.** `10xid.com` is a
-shared zone carrying several client previews, and the ruleset went from version
-3 to 9 in minutes while another client's rule replaced ours — the signature of a
-whole-ruleset `PUT` built from a stale read. Add rules with
-
-```
-POST /zones/{zone}/rulesets/{ruleset}/rules
-```
-
-which appends one rule and leaves the rest alone, never `PUT` on the ruleset.
-That protects other people's rules from us; it does not protect ours from them.
-**Re-check the header after any zone work**, and treat its absence as likely
-clobbering rather than a caching artefact:
-
-```bash
-curl -sSI https://boldeimaging.10xid.com/ | grep -i x-robots-tag
-```
+`boldeimaging.10xid.com` was the reviewed preview until 2026-10-01, when it was
+removed: the Worker Custom Domain was detached in Cloudflare and the route
+taken out of `wrangler.jsonc`. Its entry in the shared `10xid.com` noindex rule
+("10xid preview hosts — noindex") was left in place, because that rule also
+covers three other clients' previews and is not ours to rewrite.
 
 ### robots.txt has a zone-level surprise
 
-The file in `public/robots.txt` is short. What the **custom domain** serves is
-~1900 bytes, because Cloudflare's *Managed robots.txt* is switched on for the
+The file in `public/robots.txt` is short. What a hostname inside a
+Cloudflare zone serves is ~1900 bytes, because Cloudflare's *Managed robots.txt* is switched on for the
 zone and prepends a content-signals block that disallows AI crawlers
 (`ClaudeBot`, `GPTBot`, `CCBot`, `Google-Extended`, …).
 
@@ -490,62 +466,38 @@ The old `/wp-sitemap*.xml` addresses are **not** served here. Keeping old
 addresses working is a redirect job at the Cloudflare edge, covering all of them
 at once, rather than something to reimplement piecemeal in the app.
 
-### The preview is noindexed — at the edge, not in this repo
+### The preview is noindexed
 
-`boldeimaging.10xid.com` returns `X-Robots-Tag: noindex, nofollow, noarchive`
-on every response. **This lives in Cloudflare, not in git**, so it is invisible
-here and needs recreating by hand if the zone is ever rebuilt:
+The only preview host is `boldimaging.ash-47a.workers.dev`. Every response it
+serves carries `X-Robots-Tag: noindex, nofollow, noarchive`, from two places in
+this repo that are both scoped to `*.workers.dev` by hostname:
 
-```
-zone     10xid.com
-ruleset  http_response_headers_transform ("default")
-rule     boldeimaging.10xid.com — noindex the preview (covers XML/PDF, which meta cannot)
-expr     http.host eq "boldeimaging.10xid.com"
-action   rewrite → set X-Robots-Tag: noindex, nofollow, noarchive
-```
+- `public/_headers` — every static file: the pages, `robots.txt`, the sitemaps
+  and the images.
+- `src/middleware.ts` — the three on-demand routes (`/api/contact`, `/api/ftp`,
+  `/img/...`), which `_headers` cannot reach.
 
-**It is deliberately not a `<meta name="robots">` tag and not a `_headers`
-entry.** Both of those are properties of the build, and the build is what gets
-attached to `boldeimaging.com` at cutover — a noindex baked into either would
-quietly de-index the client's real site the day it goes live. Scoping it to the
-preview hostname at the edge means the production host can never inherit it.
-
-The header form also covers what a meta tag cannot: the sitemaps, the images
-and the 404 are all XML, binary or non-HTML, and none of them can carry a meta
-tag.
+**Neither may ever be widened to a bare `/*` or "anything not production".**
+The build is what gets attached to `boldeimaging.com` at cutover, so a noindex
+that is not scoped to the preview hostname would quietly de-index the client's
+real site the day it goes live. The SEO lint fails the build if `_headers`
+carries a noindex on any rule other than the workers.dev one.
 
 **`robots.txt` must keep allowing crawlers, and does.** A `Disallow: /` would
 be counterproductive here: a crawler that is not allowed to fetch the page can
 never see the noindex header, and the address can still surface in results.
 Allow the crawl, refuse the index.
 
-`workers.dev` cannot carry this rule — it is not inside a zone, so no zone
-ruleset reaches it. That hostname is still fully indexable; the canonical tags
-pointing at `boldeimaging.com` are all that protect it. Turn it off with
-`"workers_dev": false` if that matters.
-
-**This rule has already been deleted once by something else.** `10xid.com` is a
-shared zone carrying several client previews, and the ruleset went from version
-3 to 9 in minutes while another client's rule replaced ours — the signature of a
-whole-ruleset `PUT` built from a stale read. Add rules with
-
-```
-POST /zones/{zone}/rulesets/{ruleset}/rules
-```
-
-which appends one rule and leaves the rest alone, never `PUT` on the ruleset.
-That protects other people's rules from us; it does not protect ours from them.
-**Re-check the header after any zone work**, and treat its absence as likely
-clobbering rather than a caching artefact:
-
-```bash
-curl -sSI https://boldeimaging.10xid.com/ | grep -i x-robots-tag
-```
+`boldeimaging.10xid.com` was the reviewed preview until 2026-10-01, when it was
+removed: the Worker Custom Domain was detached in Cloudflare and the route
+taken out of `wrangler.jsonc`. Its entry in the shared `10xid.com` noindex rule
+("10xid preview hosts — noindex") was left in place, because that rule also
+covers three other clients' previews and is not ours to rewrite.
 
 ### robots.txt has a zone-level surprise
 
-The file in `public/robots.txt` is short. What the **custom domain** serves is
-~1900 bytes, because Cloudflare's *Managed robots.txt* is switched on for the
+The file in `public/robots.txt` is short. What a hostname inside a
+Cloudflare zone serves is ~1900 bytes, because Cloudflare's *Managed robots.txt* is switched on for the
 zone and prepends a content-signals block that disallows AI crawlers
 (`ClaudeBot`, `GPTBot`, `CCBot`, `Google-Extended`, …).
 
@@ -618,22 +570,15 @@ modest concurrency and retry 5xx before believing a failure.
 
 ### Where it is reviewed
 
-**https://boldeimaging.10xid.com** — the studio's own `10xid.com` zone, attached
-as a Worker Custom Domain (declared in `wrangler.jsonc`, so a redeploy keeps it).
-The client's domain is untouched.
+**https://boldimaging.ash-47a.workers.dev** — public, and noindexed by hostname
+(see "The preview is noindexed"). `boldeimaging.10xid.com` was removed on
+2026-10-01 and is no longer attached to this Worker.
 
-`boldimaging.ash-47a.workers.dev` also still answers, and that URL is public —
-see the note in `wrangler.jsonc`. **No hostname under `boldeimaging.com` can be
-attached yet:**
-the zone is `pending` on Cloudflare and the domain's nameservers are still at
-GoDaddy (`ns65/ns66.domaincontrol.com`), so nothing under it resolves or can be
-issued a certificate. Attaching the apex belongs to the domain cutover, never to
-a preview deploy.
-
-Because that preview URL is public and crawlable, every page carries
-`<link rel="canonical">` pointing at `https://boldeimaging.com/...`, which is
-what keeps the copy from being indexed as a duplicate of the client's live site.
-Do not repoint those at the preview host.
+**No hostname under `boldeimaging.com` can be attached yet:** the zone is
+`pending` on Cloudflare and the domain's nameservers are still at GoDaddy
+(`ns65/ns66.domaincontrol.com`), so nothing under it resolves or can be issued a
+certificate. Attaching the apex belongs to the domain cutover, never to a
+preview deploy.
 
 ## How it is put together
 

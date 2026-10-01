@@ -16,12 +16,9 @@ import { defineMiddleware } from 'astro:middleware';
  *
  * Scoped to the literal `*.workers.dev` hostname -- not "anything that is
  * not production" -- for the same reason the `_headers` rule is: the
- * client's own boldeimaging.com and the reviewed boldeimaging.10xid.com
- * staging host must never match this, in this file or any future one, so a
- * refactor here can never quietly de-index the client's live site.
- * boldeimaging.10xid.com already gets its own edge X-Robots-Tag from a
- * zone-level Transform Rule (see README, "The preview is noindexed") --
- * this middleware does not duplicate or depend on that.
+ * client's own boldeimaging.com must never match this, in this file or any
+ * future one, so a refactor here can never quietly de-index the client's
+ * live site.
  */
 const WORKERS_DEV = /(^|\.)workers\.dev$/;
 
