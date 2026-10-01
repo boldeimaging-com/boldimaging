@@ -20,8 +20,8 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, dirname, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// dist/client, not dist: the Cloudflare adapter splits the build into
-// client (pages and assets) and server (the Worker).
+// dist/client, not dist: the Node adapter splits the build into client
+// (pages and assets) and server (the on-demand handler).
 const dist = join(dirname(fileURLToPath(import.meta.url)), '..', 'dist', 'client');
 
 const walk = (d) =>
@@ -140,32 +140,25 @@ for (const o of productionPages ? sitemapOrigins : []) {
   }
 }
 
-// The workers.dev preview must carry an X-Robots-Tag on the responses the
-// HTML noindex meta tag cannot reach (robots.txt, the sitemaps, every static
-// image) -- see public/_headers. Checked here, not just by eye, because
-// Astro's build merges this file with the adapter's own /_astro/* rule and a
-// bad merge or a dropped block would otherwise only surface as a live
+// Two lists decide indexing, and they must be the same list: site-mode.ts
+// decides the HTML noindex at build time from SITE_URL, server.mjs decides the
+// X-Robots-Tag header per request from the Host. If they drifted, a page could
+// be indexable in its HTML while the server tells Google to drop it (or the
+// reverse). Checked here because nothing else would notice until a live
 // indexing regression, weeks later.
-const headersPath = join(dist, '_headers');
-if (!existsSync(headersPath)) {
-  fails.push(['_headers', 'missing from the build']);
-} else {
-  const headersTxt = readFileSync(headersPath, 'utf8');
-  const workersDevRule = /^https:\/\/[^\n]*workers\.dev\/\*\s*\n(?:[ \t]+[^\n]*\n?)*/im.exec(headersTxt);
-  if (!workersDevRule) {
-    fails.push(['_headers', 'no workers.dev rule found']);
-  } else if (!/X-Robots-Tag:\s*noindex/i.test(workersDevRule[0])) {
-    fails.push(['_headers', 'workers.dev rule does not set X-Robots-Tag: noindex']);
-  }
-  // The same block must never carry a bare /* or the production hostname --
-  // either would noindex boldeimaging.com the day this build is deployed
-  // there, which is exactly what scoping the rule to workers.dev is meant to
-  // prevent.
-  for (const m of headersTxt.matchAll(/^(https:\/\/\S*\*|\/\*)\s*\n(?:[ \t]+[^\n]*\n?)*/gim)) {
-    if (/X-Robots-Tag:\s*noindex/i.test(m[0]) && !/workers\.dev/i.test(m[0])) {
-      fails.push(['_headers', `X-Robots-Tag: noindex on a non-workers.dev rule (${m[1]}) would reach production`]);
-    }
-  }
+const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+const hostSet = (file) => {
+  const m = readFileSync(join(root, file), 'utf8').match(/PRODUCTION_HOSTS\s*=\s*new Set\(\[([^\]]*)\]\)/);
+  return m ? [...m[1].matchAll(/'([^']+)'/g)].map((x) => x[1]).sort().join(',') : null;
+};
+const serverHosts = hostSet('server.mjs');
+const buildHosts = hostSet('src/lib/site-mode.ts');
+if (!serverHosts) fails.push(['server.mjs', 'no PRODUCTION_HOSTS set found']);
+else if (serverHosts !== buildHosts) {
+  fails.push(['server.mjs', `PRODUCTION_HOSTS (${serverHosts}) differs from site-mode.ts (${buildHosts})`]);
+}
+if (!/X-Robots-Tag['"],\s*['"]noindex/.test(readFileSync(join(root, 'server.mjs'), 'utf8'))) {
+  fails.push(['server.mjs', 'does not set X-Robots-Tag: noindex for non-production hosts']);
 }
 
 const p = (l, n) => console.log(`  ${l.padEnd(34, '.')} ${n}`);

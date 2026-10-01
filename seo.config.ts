@@ -25,10 +25,11 @@ const SITE_URL = 'https://boldeimaging.com';
 
 /**
  * Absolute, because Open Graph consumers do not resolve relative URLs. It has
- * to stay a literal rather than going through `media()`: MEDIA_BASE is `/img`,
- * a path, and an og:image of "/img/..." is silently dropped by every scraper.
+ * to stay a literal rather than going through `media()`: MEDIA_BASE is
+ * `/media`, a path, and an og:image of "/media/..." is silently dropped by
+ * every scraper.
  */
-export const OG_IMAGE = `${SITE_URL}/img/2021/04/tribute14.jpg`;
+export const OG_IMAGE = `${SITE_URL}/media/2021/04/tribute14.jpg`;
 
 /**
  * Organization + WebSite, as one @graph so the two nodes can reference each
@@ -48,7 +49,7 @@ export const ORGANIZATION_JSONLD = {
       name: 'BolDe Imaging',
       legalName: 'Bolde Imaging Inc.',
       url: `${SITE_URL}/`,
-      logo: `${SITE_URL}/img/2021/04/Bolde_logo_White.png`,
+      logo: `${SITE_URL}/media/2021/04/Bolde_logo_White.png`,
       image: OG_IMAGE,
       description:
         'Signage manufacturer in Mississauga, Ontario. 2D and 3D signs, channel letters, ' +

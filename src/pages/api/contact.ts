@@ -1,34 +1,24 @@
 import type { APIRoute } from 'astro';
-// Worker bindings and secrets. `Astro.locals.runtime.env` was removed in
-// Astro 6; this is the supported way to read them.
-import { env } from 'cloudflare:workers';
 import { recordContact, requestContext, setDelivery } from '../../lib/submissions';
 
 /**
  * POST /api/contact — the /contact/ form.
  *
  * This is the only on-demand route on the site (every page is prerendered);
- * it is the reason the Cloudflare adapter is in astro.config.mjs at all.
+ * it is the reason the Node adapter is in astro.config.mjs at all.
  *
- * Every submission is written to D1 BEFORE delivery is attempted, so the
+ * Every submission is written to Postgres BEFORE delivery is attempted, so the
  * enquiry survives a Resend outage or an unset key -- the email is the
- * notification, the row is the record. A D1 failure is reported on the
+ * notification, the row is the record. A database failure is reported on the
  * response headers but never fails the request: refusing a customer's enquiry
  * because our logging is down would be the worse outage.
  *
  * Delivery is wired at gate 11 of the migration. Until RESEND_API_KEY and
- * CONTACT_TO are set as Worker secrets, this answers 503 with a message the
+ * CONTACT_TO are set as Railway variables, this answers 503 with a message the
  * form shows the visitor -- but the row is already saved by then, so nothing
  * is lost while that is outstanding.
  */
 export const prerender = false;
-
-interface Env {
-  RESEND_API_KEY?: string;
-  CONTACT_TO?: string;
-  CONTACT_FROM?: string;
-  DB?: D1Database;
-}
 
 /**
  * `dbError` rides on a header rather than in the body: the visitor should never
@@ -53,8 +43,9 @@ const esc = (s: string) =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 export const POST: APIRoute = async ({ request }) => {
-  const secrets = env as unknown as Env;
-  const db = secrets.DB;
+  // Read per request from the server's environment, never import.meta.env,
+  // which Vite would inline into the built bundle.
+  const secrets = process.env;
 
   let form: FormData;
   try {
@@ -98,7 +89,7 @@ export const POST: APIRoute = async ({ request }) => {
 
   // Record first. Everything below here can fail without losing the enquiry.
   const { country, userAgent } = requestContext(request);
-  const record = await recordContact(db, {
+  const record = await recordContact({
     name,
     lastName: text(form, 'last_name', 200),
     email,
@@ -111,7 +102,7 @@ export const POST: APIRoute = async ({ request }) => {
   });
 
   if (!secrets.RESEND_API_KEY || !secrets.CONTACT_TO) {
-    await setDelivery(db, 'contact_submissions', record.id, 'unconfigured');
+    await setDelivery('contact_submissions', record.id, 'unconfigured');
     return json(
       503,
       'The contact form is not connected yet. Please email info@boldeimaging.com or call (416) 241 2800.',
@@ -140,7 +131,7 @@ export const POST: APIRoute = async ({ request }) => {
   });
 
   if (!res.ok) {
-    await setDelivery(db, 'contact_submissions', record.id, 'failed', {
+    await setDelivery('contact_submissions', record.id, 'failed', {
       error: `resend ${res.status}: ${(await res.text().catch(() => '')).slice(0, 300)}`,
     });
     return json(
@@ -151,10 +142,10 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   const resendId = await res
-    .json<{ id?: string }>()
-    .then((b) => b?.id)
+    .json()
+    .then((b) => (b as { id?: string } | null)?.id)
     .catch(() => undefined);
-  await setDelivery(db, 'contact_submissions', record.id, 'sent', { resendId });
+  await setDelivery('contact_submissions', record.id, 'sent', { resendId });
 
   return json(
     200,

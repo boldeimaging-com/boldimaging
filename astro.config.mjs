@@ -1,15 +1,14 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
-import cloudflare from '@astrojs/cloudflare';
+import node from '@astrojs/node';
 
 // The adapter is here for one reason only: the two /api/* form routes stay on
 // demand. Every content page sets `prerender = true`, so the site is still
 // served as static files out of ./dist/client.
 //
-// `session: false` and `imageService: 'passthrough'` keep the adapter from
-// injecting a SESSION KV namespace and an IMAGES binding into the deploy
-// config -- this site uses neither, and an unresolved KV binding fails the
-// deploy.
+// Hosted on Railway as a plain Node server. `standalone` mode builds the
+// static + on-demand handler; server.mjs wraps it to add the response headers
+// a static host would otherwise set (noindex off production, cache lifetimes).
 /**
  * The site's own address. Everything derived from it moves together: the
  * canonical tags, og:url, and every <loc> in the sitemaps.
@@ -24,37 +23,35 @@ import cloudflare from '@astrojs/cloudflare';
  *
  * The cost is that the preview no longer canonicalises to the production
  * domain. That is acceptable here and only here: the preview is kept out of
- * search by the workers.dev X-Robots-Tag rule in public/_headers (and
- * src/middleware.ts for the on-demand routes) plus an HTML noindex meta tag
- * emitted in the page itself, both stronger
+ * search by the X-Robots-Tag that server.mjs sets on every response from a
+ * non-production host, plus an HTML noindex meta tag emitted in the page
+ * itself, both stronger
  * than a canonical hint, and `npm run build` prints the origin it used so this
  * cannot drift unnoticed.
  *
  * Override per build without editing the file:  SITE_URL=... npm run build
  */
-// No @types/node in this project, so reach process through an explicit cast.
+// Reached through globalThis so this file type-checks without Node's types.
 /** @type {{ env?: Record<string, string | undefined> } | undefined} */
 const nodeProcess = /** @type {any} */ (globalThis).process;
 
 const SITE_URL =
-  nodeProcess?.env?.SITE_URL || 'https://boldimaging.ash-47a.workers.dev';
+  nodeProcess?.env?.SITE_URL || 'https://stage.boldeimaging.com';
 
 console.log(`[site] building for ${SITE_URL}`);
 
 export default defineConfig({
   site: SITE_URL,
-  adapter: cloudflare({ imageService: 'passthrough' }),
-  session: false,
+  adapter: node({ mode: 'standalone' }),
   // 'ignore', not 'always'. Pages are still BUILT and LINKED with trailing
-  // slashes -- build.format 'directory' below, the canonical tags, the sitemaps
-  // and the Worker's html_handling: auto-trailing-slash are all unchanged, so
-  // the trailing-slash policy for pages is exactly as before.
+  // slashes (build.format 'directory' below, the canonical tags, the
+  // sitemaps), and server.mjs 301s a slashless page address to its slashed
+  // form, so the trailing-slash policy for pages is the same as on Workers.
   //
-  // What 'always' additionally did was refuse to MATCH any request without a
-  // trailing slash, which silently 404s the on-demand /img/[...path] route:
-  // /img/2021/05/adi.png is a file URL and cannot carry one. The page rules are
-  // a canonicalisation concern; this is a routing one, and only the latter
-  // needs relaxing.
+  // 'always' would also make Astro's own static handler 301 every slashless
+  // request, POSTs included -- and a browser follows a 301 on a POST as a GET,
+  // which would silently drop a form submission sent to /api/contact. Doing
+  // the redirect in server.mjs keeps it to GET/HEAD on real page directories.
   trailingSlash: 'ignore',
   build: {
     format: 'directory',

@@ -1,7 +1,5 @@
 import type { APIRoute } from 'astro';
-// Worker bindings and secrets. `Astro.locals.runtime.env` was removed in
-// Astro 6; this is the supported way to read them.
-import { env } from 'cloudflare:workers';
+import { getUploadStore, LINK_TTL_SECONDS } from '../../lib/uploads';
 import {
   openUpload,
   recordUploadFiles,
@@ -14,30 +12,22 @@ import {
  * POST /api/ftp — the /ftp/ production-file upload form.
  *
  * The original stores uploads in the WordPress media library and emails the
- * chosen rep. Here the files go to an R2 bucket bound as UPLOADS and the rep
- * gets a notification with the object keys.
+ * chosen rep. Here the files go to an S3-compatible bucket (see
+ * src/lib/uploads.ts) and the rep gets a notification with a download link
+ * per file.
  *
- * A D1 row is opened BEFORE the first byte goes to R2 and one row per file is
- * written as each object actually lands, so a batch that dies halfway leaves a
- * truthful partial record rather than silence. `upload_status` and
- * `delivery_status` are tracked separately on purpose: files safe in R2 with
- * the rep never notified is recoverable, and has to look different from a
- * clean success.
+ * A Postgres row is opened BEFORE the first byte goes to the bucket and one
+ * row per file is written as each object actually lands, so a batch that dies
+ * halfway leaves a truthful partial record rather than silence.
+ * `upload_status` and `delivery_status` are tracked separately on purpose:
+ * files safe in the bucket with the rep never notified is recoverable, and
+ * has to look different from a clean success.
  *
- * Both halves are wired at gate 11 of the migration. Until the bindings exist
+ * Both halves are wired at gate 11 of the migration. Until the variables exist
  * this answers 503 with a message the form shows the visitor, rather than
  * accepting a 350 MB upload and dropping it.
  */
 export const prerender = false;
-
-interface Env {
-  RESEND_API_KEY?: string;
-  UPLOADS?: { put: (key: string, value: ReadableStream | ArrayBuffer) => Promise<unknown> };
-  UPLOADS_PUBLIC_BASE?: string;
-  DB?: D1Database;
-  CONTACT_FROM?: string;
-  CONTACT_TO?: string;
-}
 
 const MAX_TOTAL = 350 * 1024 * 1024; // "Maximum file size: 350 MB"
 const MAX_FILES = 50;
@@ -78,8 +68,10 @@ const safeName = (name: string) =>
     .slice(0, 120) || 'file';
 
 export const POST: APIRoute = async ({ request }) => {
-  const bindings = env as unknown as Env;
-  const db = bindings.DB;
+  // Read per request from the server's environment, never import.meta.env,
+  // which Vite would inline into the built bundle.
+  const bindings = process.env;
+  const store = getUploadStore();
 
   let form: FormData;
   try {
@@ -109,10 +101,10 @@ export const POST: APIRoute = async ({ request }) => {
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
   const prefix = `${stamp}/${safeName(task)}`;
 
-  // Open the record before touching R2, so an upload that dies partway still
+  // Open the record before touching the bucket, so an upload that dies partway still
   // leaves evidence that somebody tried to send us files.
   const { country, userAgent } = requestContext(request);
-  const record = await openUpload(db, {
+  const record = await openUpload({
     fullName,
     email,
     task,
@@ -120,14 +112,14 @@ export const POST: APIRoute = async ({ request }) => {
     message,
     fileCount: files.length,
     totalBytes: total,
-    r2Prefix: prefix,
+    storagePrefix: prefix,
     country,
     userAgent,
   });
 
-  if (!bindings.UPLOADS || !bindings.RESEND_API_KEY) {
-    await setUploadStatus(db, record.id, 'failed', 'UPLOADS or RESEND_API_KEY binding missing');
-    await setDelivery(db, 'ftp_uploads', record.id, 'unconfigured');
+  if (!store || !bindings.RESEND_API_KEY) {
+    await setUploadStatus(record.id, 'failed', 'UPLOADS_* or RESEND_API_KEY variable missing');
+    await setDelivery('ftp_uploads', record.id, 'unconfigured');
     return json(
       503,
       'File upload is not connected yet. Please email your files to info@boldeimaging.com or call (416) 241 2800.',
@@ -141,12 +133,12 @@ export const POST: APIRoute = async ({ request }) => {
   for (const file of files) {
     const key = `${prefix}/${safeName(file.name)}`;
     try {
-      await bindings.UPLOADS.put(key, await file.arrayBuffer());
+      await store.put(key, await file.arrayBuffer(), file.type || null);
     } catch (e) {
       // Record what did land before giving up, so the rep can be told which
       // files to ask for again rather than the whole batch.
-      await recordUploadFiles(db, record.id, stored);
-      await setUploadStatus(db, record.id, 'failed', e instanceof Error ? e.message : String(e));
+      await recordUploadFiles(record.id, stored);
+      await setUploadStatus(record.id, 'failed', e instanceof Error ? e.message : String(e));
       return json(
         502,
         'Some files could not be stored. Please try again or email info@boldeimaging.com.',
@@ -157,13 +149,20 @@ export const POST: APIRoute = async ({ request }) => {
     stored.push({ key, name: file.name, bytes: file.size, type: file.type || null });
   }
 
-  const filesError = await recordUploadFiles(db, record.id, stored);
-  await setUploadStatus(db, record.id, 'stored');
+  const filesError = await recordUploadFiles(record.id, stored);
+  await setUploadStatus(record.id, 'stored');
 
-  const base = bindings.UPLOADS_PUBLIC_BASE?.replace(/\/$/, '');
-  const list = keys
-    .map((k) => (base ? `<li><a href="${base}/${k}">${esc(k)}</a></li>` : `<li>${esc(k)}</li>`))
-    .join('');
+  // The bucket is private, so each file gets a presigned link. If signing
+  // fails the key is still listed: the file is safe and findable in the
+  // bucket, the rep just has to fetch it by hand.
+  const items = await Promise.all(
+    keys.map(async (k) => {
+      const href = await store.signedGetUrl(k).catch(() => null);
+      return href ? `<li><a href="${esc(href)}">${esc(k)}</a></li>` : `<li>${esc(k)}</li>`;
+    }),
+  );
+  const list = items.join('');
+  const linkDays = Math.round(LINK_TTL_SECONDS / 86400);
 
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
@@ -181,12 +180,13 @@ export const POST: APIRoute = async ({ request }) => {
         `<p><strong>From:</strong> ${esc(fullName)} &lt;${esc(email)}&gt;</p>` +
         `<p><strong>Task:</strong> ${esc(task)}</p>` +
         (message ? `<p><strong>Message:</strong><br>${esc(message).replace(/\n/g, '<br>')}</p>` : '') +
-        `<p><strong>Files (${files.length}, ${Math.round(total / 1024 / 1024)} MB):</strong></p><ul>${list}</ul>`,
+        `<p><strong>Files (${files.length}, ${Math.round(total / 1024 / 1024)} MB):</strong></p><ul>${list}</ul>` +
+        `<p>Download links expire after ${linkDays} days.</p>`,
     }),
   });
 
   if (!res.ok) {
-    await setDelivery(db, 'ftp_uploads', record.id, 'failed', {
+    await setDelivery('ftp_uploads', record.id, 'failed', {
       error: `resend ${res.status}: ${(await res.text().catch(() => '')).slice(0, 300)}`,
     });
     return json(
@@ -197,10 +197,10 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   const resendId = await res
-    .json<{ id?: string }>()
-    .then((b) => b?.id)
+    .json()
+    .then((b) => (b as { id?: string } | null)?.id)
     .catch(() => undefined);
-  await setDelivery(db, 'ftp_uploads', record.id, 'sent', { resendId });
+  await setDelivery('ftp_uploads', record.id, 'sent', { resendId });
 
   return json(
     200,
