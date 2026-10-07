@@ -64,7 +64,9 @@ type them exactly, with the service names your project actually uses:
 | `UPLOADS_SECRET_ACCESS_KEY` | `${{Bucket.SECRET_ACCESS_KEY}}` | |
 | `UPLOADS_REGION` | `${{Bucket.REGION}}` | |
 | `RESEND_API_KEY` | from Resend | both forms' notification email |
-| `CONTACT_TO` | comma-separated addresses | where enquiries land (CC'd on FTP) |
+| `CONTACT_TO` | comma-separated addresses | where enquiries land (CC'd on FTP) until a list is saved in `/admin/` |
+| `ADMIN_PASSWORD` | a long random password | signs in to `/admin/`; unset = admin disabled |
+| `ADMIN_SESSION_SECRET` | optional | signs the admin cookie; defaults to the password |
 | `CONTACT_FROM` | optional | defaults to `BolDe Imaging <noreply@boldeimaging.com>` |
 
 `GALLERY_DATABASE_URL` is separate from `DATABASE_URL` because **the private
@@ -108,6 +110,8 @@ dropped, with nobody aware a customer had written in.
 | `ftp_upload_files` | file that actually landed in the bucket |
 | `gallery_filters` | filter tab on `/gallery/` (12) |
 | `gallery_items` | image in the gallery (116) |
+| `ftp_reps` | "Your Rep" choice on `/ftp/`, edited at `/admin/` |
+| `site_settings` | admin-edited value (`contact_recipients`) |
 | `schema_migrations` | migration file applied by `bin/migrate.mjs` |
 
 **Two status columns on `ftp_uploads`, not one.** `upload_status` covers the
@@ -136,6 +140,25 @@ form submissions are forbidden`. That is expected, and testing with `curl`
 needs an `Origin` header. Behind Railway it only works because `server.mjs`
 marks the request as HTTPS when Railway's edge says so — see Hosting below.
 Both forms post to a **trailing-slash** action (`/api/contact/`).
+
+### /admin/: the client edits the reps and the contact recipients
+
+`/admin/` (on demand, signed in with `ADMIN_PASSWORD`) edits two things that
+used to need a developer:
+
+- **The /ftp/ "Your Rep" list** — add, rename, reorder, remove. The rep a
+  customer picks is the one emailed their files. `/ftp/` stays prerendered
+  with the built-in list (`DEFAULT_REPS` in `src/lib/settings.ts`) and swaps
+  in the live list from `/api/reps/` on load; `/api/ftp/` validates against
+  the same table. The last rep cannot be removed.
+- **Where /contact/ enquiries go** (also CC'd on file uploads). Until a list
+  is saved there, `CONTACT_TO` still applies, so deploying this changed nothing.
+
+Edits apply immediately, with no rebuild. If Postgres is unreachable the
+forms fall back to the built-in reps and `CONTACT_TO`, and the admin says it
+cannot save. Login is one shared password with a signed, `SameSite=Strict`
+cookie (12 hours), and ten wrong attempts lock that address out for 15
+minutes. `/admin/` is noindexed on every host, production included.
 
 ### The gallery lives in Postgres, and is read at build time
 
@@ -396,7 +419,7 @@ public/
 
 `@astrojs/node` in `standalone` mode, with **every content page prerendered**
 (`export const prerender = true`). The adapter is present for one reason: the
-two `/api/*` form routes stay on demand. A page without `prerender = true`
+`/api/*` routes and `/admin/` stay on demand. A page without `prerender = true`
 would be rendered on every request for no reason —
 `grep -rL 'prerender = true' src/pages --include='*.astro'` is the check.
 

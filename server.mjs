@@ -52,7 +52,8 @@ const server = createServer((req, res) => {
   const url = new URL(req.url ?? '/', 'http://local');
   const path = url.pathname;
 
-  if (!isProductionRequest(req)) {
+  // /admin/ is never indexed, on production either.
+  if (!isProductionRequest(req) || path === '/admin' || path.startsWith('/admin/')) {
     res.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive');
   }
 

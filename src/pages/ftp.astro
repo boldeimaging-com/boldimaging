@@ -13,18 +13,14 @@
 // The form posts to /api/ftp — see README: delivery is wired at gate 11 of the
 // migration and the endpoint answers 503 until it is configured.
 import Base from '../layouts/Base.astro';
+import { DEFAULT_REPS } from '../lib/settings';
 
 export const prerender = true;
 
-const REPS = [
-  { email: 'joe@boldeimaging.com', name: 'Joe Husami' },
-  { email: 'tony.r@boldeimaging.com', name: 'Tony Roy' },
-  { email: 'ed@boldeimaging.com', name: 'Ed Pawluk' },
-  { email: 'mo@boldeimaging.com', name: 'Mo Husami' },
-  { email: 'dan@boldeimaging.com', name: 'Dan Lethbridge' },
-  { email: 'jarrod@boldeimaging.com', name: 'Jarrod Hickey' },
-  { email: 'suzy@boldeimaging.com', name: 'Suzy Costa' },
-];
+// The choices the client edits at /admin/. The page is prerendered with the
+// built-in list as a fallback; the script below swaps in the live one from
+// /api/reps/ on load, so an edit shows up without a rebuild.
+const REPS = DEFAULT_REPS;
 ---
 
 <Base
@@ -289,6 +285,25 @@ const REPS = [
     var form = document.getElementById('ftp-form');
     var out = document.getElementById('ftp-message');
     if (!form || !out) return;
+
+    // Replace the built-in rep list with the one edited at /admin/. On any
+    // failure the prerendered options simply stay.
+    var select = document.getElementById('your_rep');
+    fetch('/api/reps/')
+      .then(function (res) {
+        return res.ok ? res.json() : null;
+      })
+      .then(function (reps) {
+        if (!select || !Array.isArray(reps) || !reps.length) return;
+        var chosen = select.value;
+        select.replaceChildren.apply(
+          select,
+          reps.map(function (rep) {
+            return new Option(rep.name, rep.email, false, rep.email === chosen);
+          })
+        );
+      })
+      .catch(function () {});
     form.addEventListener('submit', async function (e) {
       e.preventDefault();
       var btn = form.querySelector('.jform__submit');
