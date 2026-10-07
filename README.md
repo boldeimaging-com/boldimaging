@@ -342,14 +342,18 @@ the crawl, refuse the index.
 
 Every image is served from `https://img.boldeimaging.com/`: the public
 Backblaze B2 bucket `boldeimaging-img` (351 files, verified by SHA-1 against
-the copies that used to sit in `public/media/`) behind a **proxied** Cloudflare
-CNAME, a URL rewrite rule (`/<path>` → `/file/boldeimaging-img/<path>`) and a
-cache rule (1 month at the edge). The hero video is not an image and is still
-served from `public/media/` by this site's own server.
+the copies that used to sit in `public/media/`). DNS stays at GoDaddy, so
+instead of a proxied Cloudflare CNAME the hostname is a Railway custom domain
+on the `img` function in this Railway project (source of record:
+`img-proxy/index.ts`). It maps `/<path>` to `/file/boldeimaging-img/<path>`.
+GoDaddy holds two records for it: CNAME `img` and TXT `_railway-verify.img`.
+The hero video is not an image and is still served from `public/media/` by
+this site's own server.
 
-**The Cloudflare edge cache is not optional here.** B2 throttles bursts with
-`{"code":"too_busy"}`, and one page view asks for ~66 objects, so the bucket
-must never be reached directly — never reference `*.backblazeb2.com`.
+**The in-memory cache in that function is not optional.** B2 throttles bursts
+with `{"code":"too_busy"}`, and one page view asks for ~66 objects, so objects
+are kept in memory once fetched and concurrent requests share one origin
+fetch. Never reference `*.backblazeb2.com` from the site.
 
 Every image address in the build was checked against the bucket: 320
 distinct addresses on `img.boldeimaging.com`, 0 missing. `npm run build` ends
