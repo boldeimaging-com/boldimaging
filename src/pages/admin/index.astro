@@ -1,0 +1,283 @@
+---
+// /admin/ — where the client edits the /ftp/ "Your Rep" list and the
+// addresses /contact/ enquiries go to. Rendered on demand (it reads and writes
+// Postgres), signed in with ADMIN_PASSWORD; see src/lib/admin-auth.ts.
+//
+// Every change is a plain form POST that redirects back here (303), so a
+// refresh never resubmits it. Changes apply to the live forms immediately:
+// /ftp/ fetches the reps from /api/reps/ and both endpoints read these tables
+// per request.
+import Admin from '../../layouts/Admin.astro';
+import {
+  adminConfigured,
+  checkPassword,
+  clientKey,
+  isSignedIn,
+  lockedOut,
+  signIn,
+  signOut,
+} from '../../lib/admin-auth';
+import {
+  addRep,
+  EMAIL_RE,
+  getContactRecipients,
+  getReps,
+  moveRep,
+  removeRep,
+  saveContactRecipients,
+  updateRep,
+} from '../../lib/settings';
+
+export const prerender = false;
+
+const back = (msg: string, ok = true) =>
+  Astro.redirect(`/admin/?${new URLSearchParams({ [ok ? 'ok' : 'err']: msg })}`, 303);
+
+const field = (form: FormData, name: string, max = 200) => {
+  const v = form.get(name);
+  return typeof v === 'string' ? v.trim().slice(0, max) : '';
+};
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData().catch(() => new FormData());
+  const action = field(form, 'action');
+
+  if (action === 'login') {
+    const client = clientKey(Astro.request);
+    if (!adminConfigured()) return back('Admin is not set up yet.', false);
+    if (lockedOut(client)) return back('Too many attempts. Try again in 15 minutes.', false);
+    if (!checkPassword(client, field(form, 'password', 500))) return back('That password is not right.', false);
+    signIn(Astro.cookies, Astro.url.protocol === 'https:');
+    return back('Signed in.');
+  }
+
+  if (!isSignedIn(Astro.cookies)) return back('Please sign in.', false);
+
+  if (action === 'logout') {
+    signOut(Astro.cookies);
+    return back('Signed out.');
+  }
+
+  const id = Number(field(form, 'id'));
+  const name = field(form, 'name', 100);
+  const email = field(form, 'email').toLowerCase();
+
+  try {
+    switch (action) {
+      case 'add_rep':
+      case 'update_rep':
+        if (!name) return back('Please enter the rep’s name.', false);
+        if (!EMAIL_RE.test(email)) return back(`“${email}” is not a valid email address.`, false);
+        if (action === 'add_rep') await addRep(name, email);
+        else await updateRep(id, name, email);
+        return back(action === 'add_rep' ? `Added ${name}.` : `Saved ${name}.`);
+      case 'remove_rep':
+        await removeRep(id);
+        return back('Rep removed.');
+      case 'move_up':
+      case 'move_down':
+        await moveRep(id, action === 'move_up' ? -1 : 1);
+        return back('Order saved.');
+      case 'save_recipients': {
+        const list = [
+          ...new Set(
+            field(form, 'recipients', 5000)
+              .split(/[\s,;]+/)
+              .map((s) => s.toLowerCase())
+              .filter(Boolean),
+          ),
+        ];
+        const bad = list.filter((s) => !EMAIL_RE.test(s));
+        if (bad.length) return back(`Not valid email addresses: ${bad.join(', ')}`, false);
+        if (!list.length) return back('Enter at least one address, or enquiries will go nowhere.', false);
+        await saveContactRecipients(list);
+        return back('Contact form recipients saved.');
+      }
+      default:
+        return back('Unknown action.', false);
+    }
+  } catch (e) {
+    return back(`Not saved: ${e instanceof Error ? e.message : String(e)}`, false);
+  }
+}
+
+const signedIn = isSignedIn(Astro.cookies);
+const reps = signedIn ? await getReps() : null;
+const recipients = signedIn ? await getContactRecipients() : null;
+---
+
+<Admin title="Website settings" signedIn={signedIn} active="settings">
+  {
+    !signedIn && !adminConfigured() && (
+      <p class="card">
+        Admin is not set up yet. Set the <code>ADMIN_PASSWORD</code> variable on the Railway web service,
+        then reload this page.
+      </p>
+    )
+  }
+
+  {
+    !signedIn && adminConfigured() && (
+      <form class="card login" method="post" action="/admin/">
+        <input type="hidden" name="action" value="login" />
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required autofocus />
+        <button type="submit">Sign in</button>
+      </form>
+    )
+  }
+
+  {
+    signedIn && reps && recipients && (
+      <>
+        <section class="card">
+          <h2>File upload reps</h2>
+          <p class="hint">
+            The “Your Rep” choices on the <a href="/ftp/">File Upload</a> page, in this order. The rep a
+            customer picks is emailed their files.
+          </p>
+          {reps.source === 'fallback' && (
+            <p class="flash flash--err">
+              Showing the built-in list because the database could not be read ({reps.error}). Changes
+              cannot be saved until it can.
+            </p>
+          )}
+
+          <ol class="reps">
+            {reps.reps.map((rep, i) => (
+              <li class="rep">
+                <form class="rep__form" method="post" action="/admin/">
+                  <input type="hidden" name="id" value={String(rep.id ?? '')} />
+                  <label>
+                    <span>Name</span>
+                    <input name="name" value={rep.name} required maxlength="100" />
+                  </label>
+                  <label>
+                    <span>Email</span>
+                    <input name="email" type="email" value={rep.email} required />
+                  </label>
+                  <div class="rep__actions">
+                    <button name="action" value="update_rep" type="submit">Save</button>
+                    <button
+                      name="action"
+                      value="move_up"
+                      type="submit"
+                      class="icon"
+                      aria-label={`Move ${rep.name} up`}
+                      disabled={i === 0}
+                      formnovalidate
+                    >
+                      ↑
+                    </button>
+                    <button
+                      name="action"
+                      value="move_down"
+                      type="submit"
+                      class="icon"
+                      aria-label={`Move ${rep.name} down`}
+                      disabled={i === reps.reps.length - 1}
+                      formnovalidate
+                    >
+                      ↓
+                    </button>
+                    <button
+                      name="action"
+                      value="remove_rep"
+                      type="submit"
+                      class="danger"
+                      disabled={reps.reps.length === 1}
+                      formnovalidate
+                      data-confirm={`Remove ${rep.name} from the list?`}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </form>
+              </li>
+            ))}
+          </ol>
+
+          <form class="rep__form rep__form--add" method="post" action="/admin/">
+            <input type="hidden" name="action" value="add_rep" />
+            <label>
+              <span>Name</span>
+              <input name="name" required maxlength="100" placeholder="Jane Doe" />
+            </label>
+            <label>
+              <span>Email</span>
+              <input name="email" type="email" required placeholder="jane@boldeimaging.com" />
+            </label>
+            <div class="rep__actions">
+              <button type="submit">Add rep</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="card">
+          <h2>Contact form recipients</h2>
+          <p class="hint">
+            Every enquiry from the <a href="/contact/">Contact</a> page is emailed to these addresses. They
+            are also copied on every file upload. One address per line.
+          </p>
+          {recipients.source === 'variable' && (
+            <p class="hint">
+              Currently taken from the <code>CONTACT_TO</code> Railway variable. Saving here replaces it.
+            </p>
+          )}
+          {recipients.source === 'none' && (
+            <p class="flash flash--err">No recipients are set, so enquiries are not being emailed.</p>
+          )}
+          <form method="post" action="/admin/">
+            <input type="hidden" name="action" value="save_recipients" />
+            {/* One line: whitespace inside a textarea is part of its value. */}
+            <textarea name="recipients" rows={Math.max(3, recipients.recipients.length + 1)} required>{recipients.recipients.join('\n')}</textarea>
+            <button type="submit">Save recipients</button>
+          </form>
+        </section>
+      </>
+    )
+  }
+</Admin>
+
+<style>
+  .login {
+    display: grid;
+    gap: 8px;
+    max-width: 320px;
+  }
+  .reps {
+    margin: 0 0 16px;
+    padding: 0;
+    list-style: none;
+  }
+  .rep {
+    padding: 12px 0;
+    border-bottom: 1px solid #eee;
+  }
+  .rep__form {
+    display: grid;
+    grid-template-columns: 1fr 1.4fr auto;
+    gap: 8px;
+    align-items: end;
+  }
+  .rep__form label span {
+    display: block;
+    font-size: 13px;
+    color: #666;
+  }
+  .rep__actions {
+    display: flex;
+    gap: 6px;
+  }
+  .rep__form--add {
+    padding-top: 4px;
+  }
+  textarea {
+    margin-bottom: 12px;
+  }
+  @media (max-width: 640px) {
+    .rep__form {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { recordContact, requestContext, setDelivery } from '../../lib/submissions';
+import { getContactRecipients } from '../../lib/settings';
 
 /**
  * POST /api/contact — the /contact/ form.
@@ -13,8 +14,9 @@ import { recordContact, requestContext, setDelivery } from '../../lib/submission
  * response headers but never fails the request: refusing a customer's enquiry
  * because our logging is down would be the worse outage.
  *
- * Delivery is wired at gate 11 of the migration. Until RESEND_API_KEY and
- * CONTACT_TO are set as Railway variables, this answers 503 with a message the
+ * Delivery is wired at gate 11 of the migration. Until RESEND_API_KEY is set
+ * and there is at least one recipient (saved at /admin/, else the CONTACT_TO
+ * variable), this answers 503 with a message the
  * form shows the visitor -- but the row is already saved by then, so nothing
  * is lost while that is outstanding.
  */
@@ -101,7 +103,10 @@ export const POST: APIRoute = async ({ request }) => {
     userAgent,
   });
 
-  if (!secrets.RESEND_API_KEY || !secrets.CONTACT_TO) {
+  // Edited at /admin/; the CONTACT_TO variable until someone saves a list there.
+  const { recipients } = await getContactRecipients();
+
+  if (!secrets.RESEND_API_KEY || !recipients.length) {
     await setDelivery('contact_submissions', record.id, 'unconfigured');
     return json(
       503,
@@ -123,7 +128,7 @@ export const POST: APIRoute = async ({ request }) => {
     },
     body: JSON.stringify({
       from: secrets.CONTACT_FROM || 'BolDe Imaging <noreply@boldeimaging.com>',
-      to: secrets.CONTACT_TO.split(',').map((s) => s.trim()),
+      to: recipients,
       reply_to: email || undefined,
       subject: `Website enquiry from ${name}`,
       html: body,

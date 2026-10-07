@@ -25,6 +25,8 @@ export const LINK_TTL_SECONDS = 7 * 24 * 60 * 60;
 export interface UploadStore {
   put(key: string, body: ArrayBuffer, contentType: string | null): Promise<void>;
   signedGetUrl(key: string): Promise<string>;
+  /** The object as the bucket returns it; check `ok` (404 when missing). */
+  get(key: string): Promise<Response>;
 }
 
 /** Encode each path segment, keep the slashes. */
@@ -60,6 +62,10 @@ export function getUploadStore(): UploadStore | null {
         const why = (await res.text().catch(() => '')).slice(0, 200);
         throw new Error(`bucket PUT ${res.status}: ${why}`);
       }
+    },
+
+    get(key) {
+      return client.fetch(objectUrl(key));
     },
 
     async signedGetUrl(key) {

@@ -64,7 +64,9 @@ type them exactly, with the service names your project actually uses:
 | `UPLOADS_SECRET_ACCESS_KEY` | `${{Bucket.SECRET_ACCESS_KEY}}` | |
 | `UPLOADS_REGION` | `${{Bucket.REGION}}` | |
 | `RESEND_API_KEY` | from Resend | both forms' notification email |
-| `CONTACT_TO` | comma-separated addresses | where enquiries land (CC'd on FTP) |
+| `CONTACT_TO` | comma-separated addresses | where enquiries land (CC'd on FTP) until a list is saved in `/admin/` |
+| `ADMIN_PASSWORD` | a long random password | signs in to `/admin/`; unset = admin disabled |
+| `ADMIN_SESSION_SECRET` | optional | signs the admin cookie; defaults to the password |
 | `CONTACT_FROM` | optional | defaults to `BolDe Imaging <noreply@boldeimaging.com>` |
 
 `GALLERY_DATABASE_URL` is separate from `DATABASE_URL` because **the private
@@ -108,6 +110,9 @@ dropped, with nobody aware a customer had written in.
 | `ftp_upload_files` | file that actually landed in the bucket |
 | `gallery_filters` | filter tab on `/gallery/` (12) |
 | `gallery_items` | image in the gallery (116) |
+| `ftp_reps` | "Your Rep" choice on `/ftp/`, edited at `/admin/` |
+| `site_settings` | admin-edited value (`contact_recipients`) |
+| `portfolio_items` | Our Work entry: the `/services/` grid and its `/portfolio/<slug>/` page |
 | `schema_migrations` | migration file applied by `bin/migrate.mjs` |
 
 **Two status columns on `ftp_uploads`, not one.** `upload_status` covers the
@@ -136,6 +141,34 @@ form submissions are forbidden`. That is expected, and testing with `curl`
 needs an `Origin` header. Behind Railway it only works because `server.mjs`
 marks the request as HTTPS when Railway's edge says so — see Hosting below.
 Both forms post to a **trailing-slash** action (`/api/contact/`).
+
+### /admin/: the client edits the reps, the contact recipients and Our Work
+
+`/admin/` (on demand, signed in with `ADMIN_PASSWORD`) edits three things that
+used to need a developer:
+
+- **The /ftp/ "Your Rep" list** — add, rename, reorder, remove. The rep a
+  customer picks is the one emailed their files. `/ftp/` stays prerendered
+  with the built-in list (`DEFAULT_REPS` in `src/lib/settings.ts`) and swaps
+  in the live list from `/api/reps/` on load; `/api/ftp/` validates against
+  the same table. The last rep cannot be removed.
+- **Where /contact/ enquiries go** (also CC'd on file uploads). Until a list
+  is saved there, `CONTACT_TO` still applies, so deploying this changed nothing.
+- **Our Work** (`/admin/work/`) — add, edit, reorder and remove entries, like
+  blog posts: title, Exterior/Interior, description, one image. Each entry is
+  a tile on `/services/` and a page at `/portfolio/<slug>/`, live on save. The
+  slug is made from the title and fixed after creation, so saved links never
+  break. Uploaded images go to the uploads bucket under `work/` and are served
+  by `/work-media/<name>` (the bucket is private), cached as immutable because
+  every upload gets a new name. The twelve original entries are seeded from
+  `src/data/portfolio.ts`, which stays as the fallback, and keep their images
+  in `/media`.
+
+Edits apply immediately, with no rebuild. If Postgres is unreachable the
+forms fall back to the built-in reps and `CONTACT_TO`, and the admin says it
+cannot save. Login is one shared password with a signed, `SameSite=Strict`
+cookie (12 hours), and ten wrong attempts lock that address out for 15
+minutes. `/admin/` is noindexed on every host, production included.
 
 ### The gallery lives in Postgres, and is read at build time
 
@@ -217,15 +250,22 @@ added before switch-off, it goes in `seo.config.ts` under `verification`.
 Current lint output:
 
 ```
-  pages ............................. 20
-  JSON-LD blocks .................... 20
-  images with alt text .............. 187
-  images marked decorative .......... 54
+  pages ............................. 7
+  JSON-LD blocks .................... 7
+  images with alt text .............. 174
+  images marked decorative .......... 42
   images with no alt attribute ...... 0
   failures .......................... 0
 ```
 
-The 54 decorative images are the clients marquee's duplicated logos, which
+Seven, not twenty: `/services/` and the `/portfolio/*` pages render on demand
+now (see "/admin/" below), so they are not in `dist/client` for the lint to
+read. They still go through the same Zod-validated `SEO.astro`, and the admin
+caps titles at the length that schema accepts. With the seeded entries they
+render byte-identical to the prerendered pages they replaced (checked page by
+page against `main`).
+
+The 42 decorative images are the clients marquee's duplicated logos, which
 carry `alt=""` and `aria-hidden="true"` — correct, not a gap. A lint matching
 only `/\salt\s*=/` reports them as faults, because Astro emits the valueless
 form `alt`; this one distinguishes all three cases.
@@ -248,9 +288,12 @@ crawled for years survives the migration:
 | `sitemap-categories.xml` | `wp-sitemap-taxonomies-category-1.xml` | 2 category archives |
 | `sitemap-images.xml` | *(no counterpart)* | 195 images across 15 pages |
 
-All generated from the same data modules the pages render from, so adding a
+All generated from the same data the pages render from, so adding a
 portfolio entry or a gallery image updates the sitemaps with nothing else to
-remember.
+remember. `sitemap-portfolio.xml` and `sitemap-images.xml` render on demand
+from `portfolio_items`, so an entry added in the admin is listed at once; the
+portfolio `<lastmod>` is the row's `updated_at`, seeded with the WordPress
+dates.
 
 **Every address comes from `site` in `astro.config.mjs`, and it points at the
 preview host today.** *** AT CUTOVER, CHANGE IT TO `https://boldeimaging.com`.
@@ -376,7 +419,7 @@ place, because that rule also covers three other clients' previews.
 src/
   consts.ts              MEDIA_BASE, site details, the four-item menu
   data/                  content scraped from the live site
-    portfolio.ts           the twelve portfolio entries, in site order
+    portfolio.ts           the twelve portfolio entries: seed and fallback for portfolio_items
     home.ts                the three home-page image lists
     gallery.ts             the 116 gallery images and their twelve filters
   styles/
@@ -395,8 +438,10 @@ public/
 ### Hosting
 
 `@astrojs/node` in `standalone` mode, with **every content page prerendered**
-(`export const prerender = true`). The adapter is present for one reason: the
-two `/api/*` form routes stay on demand. A page without `prerender = true`
+(`export const prerender = true`) **except Our Work**: `/services/`,
+`/portfolio/<slug>/` and their two sitemaps render on demand so admin edits
+are live at once. The other on-demand routes are `/api/*`, `/admin/` and
+`/work-media/*`. A page without `prerender = true`
 would be rendered on every request for no reason —
 `grep -rL 'prerender = true' src/pages --include='*.astro'` is the check.
 

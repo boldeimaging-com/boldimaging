@@ -1,0 +1,211 @@
+---
+// /admin/work/new/ and /admin/work/<id>/ — add or edit one Our Work entry.
+//
+// A failed save re-renders the form with what was typed, rather than
+// redirecting, so a too-long title never costs the body copy. A good save
+// redirects to the list.
+import Admin from '../../../layouts/Admin.astro';
+import { isSignedIn } from '../../../lib/admin-auth';
+import { imageInfo } from '../../../lib/image-size';
+import { getUploadStore } from '../../../lib/uploads';
+import {
+  CATEGORIES,
+  MAX_TITLE,
+  WORK_MEDIA,
+  createWorkItem,
+  getWorkItem,
+  slugTaken,
+  slugify,
+  updateWorkItem,
+  workImage,
+  type WorkFields,
+  type WorkItem,
+} from '../../../lib/portfolio-source';
+
+export const prerender = false;
+
+const MAX_IMAGE = 15 * 1024 * 1024;
+
+if (!isSignedIn(Astro.cookies)) return Astro.redirect('/admin/?err=Please+sign+in.', 303);
+
+const isNew = Astro.params.id === 'new';
+const id = Number(Astro.params.id);
+if (!isNew && !(Number.isInteger(id) && id > 0)) return Astro.redirect('/admin/work/', 303);
+
+let existing: WorkItem | null = null;
+let loadError: string | null = null;
+if (!isNew) {
+  try {
+    existing = await getWorkItem(id);
+  } catch (e) {
+    loadError = e instanceof Error ? e.message : String(e);
+  }
+  if (!existing && !loadError) return Astro.redirect('/admin/work/?err=That+entry+no+longer+exists.', 303);
+}
+
+let error: string | null = null;
+let values = {
+  title: existing?.title ?? '',
+  slug: existing?.slug ?? '',
+  body: existing?.body ?? '',
+  categories: existing?.categories ?? [],
+};
+
+if (Astro.request.method === 'POST' && !loadError) {
+  const form = await Astro.request.formData().catch(() => new FormData());
+  const str = (k: string, max: number) => String(form.get(k) ?? '').trim().slice(0, max);
+  values = {
+    title: str('title', 200).replace(/\s+/g, ' '),
+    slug: isNew ? slugify(str('slug', 200) || str('title', 200)) : values.slug,
+    body: str('body', 10000).replace(/\r\n/g, '\n'),
+    categories: CATEGORIES.filter((c) => form.getAll('categories').includes(c)),
+  };
+  const file = form.get('image');
+  const upload = file instanceof File && file.size > 0 ? file : null;
+
+  if (!values.title) error = 'Please enter a title.';
+  else if (values.title.length > MAX_TITLE) error = `Please keep the title to ${MAX_TITLE} characters.`;
+  else if (!values.slug) error = 'The title needs at least one letter or number for the page address.';
+  else if (isNew && !upload) error = 'Please choose an image.';
+  else if (upload && upload.size > MAX_IMAGE) error = 'That image is over 15 MB. Please use a smaller copy.';
+  else if (isNew) {
+    try {
+      if (await slugTaken(values.slug)) {
+        error = `There is already an entry at /portfolio/${values.slug}/. Try a different title or address.`;
+      }
+    } catch (e) {
+      error = `Not saved: ${e instanceof Error ? e.message : String(e)}`;
+    }
+  }
+
+  let image: WorkFields['image'];
+  if (!error && upload) {
+    const bytes = await upload.arrayBuffer();
+    const info = imageInfo(bytes);
+    const store = getUploadStore();
+    if (!info) error = 'Please upload a JPEG, PNG or WebP image.';
+    else if (!store) error = 'Image storage is not connected (the UPLOADS_* variables on Railway).';
+    else {
+      const name = `${new Date().toISOString().replace(/[:.]/g, '-')}-${values.slug}.${info.ext}`;
+      try {
+        await store.put(`work/${name}`, bytes, info.type);
+        image = { src: WORK_MEDIA + name, width: info.width, height: info.height };
+      } catch (e) {
+        error = `The image could not be stored: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    }
+  }
+
+  if (!error) {
+    const fields = { title: values.title, body: values.body, categories: values.categories };
+    try {
+      if (isNew) await createWorkItem(values.slug, { ...fields, image: image! });
+      else await updateWorkItem(id, { ...fields, image });
+      return Astro.redirect(
+        `/admin/work/?${new URLSearchParams({ ok: `${isNew ? 'Added' : 'Saved'} “${values.title}”.` })}`,
+        303,
+      );
+    } catch (e) {
+      error = `Not saved: ${e instanceof Error ? e.message : String(e)}`;
+    }
+  }
+  Astro.response.status = 422;
+}
+---
+
+<Admin title={isNew ? 'Add an entry' : `Edit “${existing?.title ?? ''}”`} signedIn active="work">
+  <p><a href="/admin/work/">← All entries</a></p>
+
+  {loadError && <p class="flash flash--err">The database could not be read ({loadError}).</p>}
+  {error && <p class="flash flash--err" role="alert">{error}</p>}
+
+  {
+    !loadError && (
+      <form class="card" method="post" enctype="multipart/form-data">
+        <label class="field">
+          <span>Title (up to {MAX_TITLE} characters)</span>
+          <input name="title" value={values.title} required maxlength={MAX_TITLE} />
+        </label>
+
+        {isNew ? (
+          <label class="field">
+            <span>Page address (optional; made from the title if left blank)</span>
+            <input name="slug" value={values.slug} pattern="[A-Za-z0-9 -]*" placeholder="e.g. vehicle-wraps" />
+          </label>
+        ) : (
+          <p class="field">
+            <span>Page address</span>
+            <a href={`/portfolio/${values.slug}/`}>/portfolio/{values.slug}/</a>
+            <small class="note"> Fixed, so links to it keep working.</small>
+          </p>
+        )}
+
+        <fieldset class="field cats">
+          <legend>Categories</legend>
+          {CATEGORIES.map((c) => (
+            <label>
+              <input type="checkbox" name="categories" value={c} checked={values.categories.includes(c)} /> {c}
+            </label>
+          ))}
+        </fieldset>
+
+        <label class="field">
+          <span>Description (a blank line starts a new paragraph)</span>
+          <textarea name="body" rows="8">{values.body}</textarea>
+        </label>
+
+        <div class="field">
+          <span>Image {isNew ? '' : '(leave empty to keep the current one)'}</span>
+          {existing && (
+            <img
+              class="preview"
+              src={workImage(existing.image)}
+              alt=""
+              width={existing.imageWidth}
+              height={existing.imageHeight}
+            />
+          )}
+          <input name="image" type="file" accept="image/jpeg,image/png,image/webp" required={isNew} />
+          <small class="note">JPEG, PNG or WebP, up to 15 MB; about 1600 pixels wide is plenty. Shown on the Our Work grid and the entry’s page.</small>
+        </div>
+
+        <div class="actions">
+          <button type="submit">{isNew ? 'Add entry' : 'Save changes'}</button>
+          <a class="button secondary" href="/admin/work/">Cancel</a>
+        </div>
+      </form>
+    )
+  }
+</Admin>
+
+<style>
+  .cats {
+    border: 0;
+    padding: 0;
+    margin-inline: 0;
+  }
+  .cats legend {
+    font-size: 13px;
+    color: #666;
+    padding: 0;
+    margin-bottom: 4px;
+  }
+  .cats label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-right: 24px;
+  }
+  .preview {
+    display: block;
+    max-width: 320px;
+    width: 100%;
+    height: auto;
+    margin: 4px 0 8px;
+    border-radius: 4px;
+  }
+  .note {
+    display: block;
+    color: #666;
+  }
+</style>

@@ -2,7 +2,7 @@
 import { defineConfig } from 'astro/config';
 import node from '@astrojs/node';
 
-// The adapter is here for one reason only: the two /api/* form routes stay on
+// The adapter is here for one reason only: the /api/* routes and /admin/ stay on
 // demand. Every content page sets `prerender = true`, so the site is still
 // served as static files out of ./dist/client.
 //

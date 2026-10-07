@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { getUploadStore, LINK_TTL_SECONDS } from '../../lib/uploads';
+import { getContactRecipients, getReps } from '../../lib/settings';
 import {
   openUpload,
   recordUploadFiles,
@@ -31,16 +32,6 @@ export const prerender = false;
 
 const MAX_TOTAL = 350 * 1024 * 1024; // "Maximum file size: 350 MB"
 const MAX_FILES = 50;
-
-const REPS = new Set([
-  'joe@boldeimaging.com',
-  'tony.r@boldeimaging.com',
-  'ed@boldeimaging.com',
-  'mo@boldeimaging.com',
-  'dan@boldeimaging.com',
-  'jarrod@boldeimaging.com',
-  'suzy@boldeimaging.com',
-]);
 
 /** See the note in api/contact.ts: storage failures ride on a header. */
 const json = (status: number, message: string, dbError?: string | null) =>
@@ -83,13 +74,15 @@ export const POST: APIRoute = async ({ request }) => {
   const fullName = text(form, 'full_name', 200);
   const email = text(form, 'your_email', 200);
   const task = text(form, 'your_task', 200);
-  const rep = text(form, 'your_rep', 200);
+  const rep = text(form, 'your_rep', 200).toLowerCase();
   const message = text(form, 'your_message');
 
   if (!fullName) return json(422, 'Please enter your full name.');
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json(422, 'Please check the email address.');
   if (!task) return json(422, 'Please enter a task name.');
-  if (!REPS.has(rep)) return json(422, 'Please choose your rep.');
+  // The list the client edits at /admin/ (the built-in one if Postgres is down).
+  const { reps } = await getReps();
+  if (!reps.some((r) => r.email === rep)) return json(422, 'Please choose your rep.');
 
   const files = form.getAll('your_files').filter((f): f is File => f instanceof File && f.size > 0);
   if (!files.length) return json(422, 'Please choose at least one file.');
@@ -164,6 +157,8 @@ export const POST: APIRoute = async ({ request }) => {
   const list = items.join('');
   const linkDays = Math.round(LINK_TTL_SECONDS / 86400);
 
+  const cc = (await getContactRecipients()).recipients;
+
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
@@ -173,7 +168,7 @@ export const POST: APIRoute = async ({ request }) => {
     body: JSON.stringify({
       from: bindings.CONTACT_FROM || 'BolDe Imaging <noreply@boldeimaging.com>',
       to: [rep],
-      cc: bindings.CONTACT_TO ? bindings.CONTACT_TO.split(',').map((s) => s.trim()) : undefined,
+      cc: cc.length ? cc : undefined,
       reply_to: email,
       subject: `File upload: ${task}`,
       html:

@@ -1,0 +1,156 @@
+---
+// /admin/work/ — the Our Work entries, in grid order: reorder, remove, or open
+// one to edit. Adding and editing happen on /admin/work/<id>/.
+import Admin from '../../../layouts/Admin.astro';
+import { isSignedIn } from '../../../lib/admin-auth';
+import { getPortfolio, moveWorkItem, removeWorkItem, workImage } from '../../../lib/portfolio-source';
+
+export const prerender = false;
+
+const back = (msg: string, ok = true) =>
+  Astro.redirect(`/admin/work/?${new URLSearchParams({ [ok ? 'ok' : 'err']: msg })}`, 303);
+
+if (!isSignedIn(Astro.cookies)) return Astro.redirect('/admin/?err=Please+sign+in.', 303);
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData().catch(() => new FormData());
+  const action = String(form.get('action') ?? '');
+  const id = Number(form.get('id'));
+  try {
+    if (action === 'move_up' || action === 'move_down') {
+      await moveWorkItem(id, action === 'move_up' ? -1 : 1);
+      return back('Order saved.');
+    }
+    if (action === 'remove') {
+      await removeWorkItem(id);
+      return back('Entry removed.');
+    }
+    return back('Unknown action.', false);
+  } catch (e) {
+    return back(`Not saved: ${e instanceof Error ? e.message : String(e)}`, false);
+  }
+}
+
+const { items, source, error } = await getPortfolio();
+---
+
+<Admin title="Our Work" signedIn active="work">
+  <section class="card">
+    <div class="head">
+      <p class="hint">
+        The entries on the <a href="/services/">Our Work</a> page, in this order. Each has its own page.
+        Changes are live as soon as they are saved.
+      </p>
+      {source === 'database' && <a class="button" href="/admin/work/new/">Add entry</a>}
+    </div>
+
+    {
+      source === 'fallback' && (
+        <p class="flash flash--err">
+          Showing the built-in list because the database could not be read ({error}). Changes cannot be saved
+          until it can.
+        </p>
+      )
+    }
+
+    {items.length === 0 && <p class="hint">No entries yet. The Our Work page is empty until one is added.</p>}
+
+    <ol class="list">
+      {
+        items.map((item, i) => (
+          <li class="item">
+            <img class="thumb" src={workImage(item.grid)} alt="" width="96" height="72" loading="lazy" />
+            <div class="meta">
+              <strong>{item.title}</strong>
+              <span>
+                <a href={`/portfolio/${item.slug}/`}>/portfolio/{item.slug}/</a>
+                {item.categories.length > 0 && <> · {item.categories.join(', ')}</>}
+              </span>
+            </div>
+            {item.id !== null && (
+              <form class="actions" method="post" action="/admin/work/">
+                <input type="hidden" name="id" value={String(item.id)} />
+                <a class="button secondary" href={`/admin/work/${item.id}/`}>
+                  Edit
+                </a>
+                <button name="action" value="move_up" class="icon" aria-label={`Move ${item.title} up`} disabled={i === 0}>
+                  ↑
+                </button>
+                <button
+                  name="action"
+                  value="move_down"
+                  class="icon"
+                  aria-label={`Move ${item.title} down`}
+                  disabled={i === items.length - 1}
+                >
+                  ↓
+                </button>
+                <button
+                  name="action"
+                  value="remove"
+                  class="danger"
+                  data-confirm={`Remove “${item.title}”? Its page will stop working.`}
+                >
+                  Remove
+                </button>
+              </form>
+            )}
+          </li>
+        ))
+      }
+    </ol>
+  </section>
+</Admin>
+
+<style>
+  .head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .item {
+    display: grid;
+    grid-template-columns: 96px 1fr auto;
+    gap: 12px;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #eee;
+  }
+  .thumb {
+    width: 96px;
+    height: 72px;
+    object-fit: cover;
+    border-radius: 4px;
+    background: #eee;
+  }
+  .meta {
+    display: grid;
+    min-width: 0;
+  }
+  .meta span {
+    font-size: 14px;
+    color: #666;
+    overflow-wrap: anywhere;
+  }
+  @media (max-width: 640px) {
+    .head {
+      flex-direction: column;
+    }
+    .item {
+      grid-template-columns: 72px 1fr;
+    }
+    .thumb {
+      width: 72px;
+      height: 54px;
+    }
+    .item .actions {
+      grid-column: 1 / -1;
+    }
+  }
+</style>
