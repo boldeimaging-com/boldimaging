@@ -1,27 +1,23 @@
 /**
  * Site-wide constants.
  *
- * MEDIA_BASE is the single place every image and the hero video resolve
- * through -- pages, components and the image sitemap all go via `media()`.
+ * MEDIA_BASE is the single place every image resolves through -- pages,
+ * components and the image sitemap all go via `media()`.
  *
- * On Railway it is `/media`: the copies committed under public/media/, served
- * by this site's own Node server (server.mjs marks them immutable). They are
- * byte-identical to the Backblaze bucket `boldeimaging-img` -- 351 files,
- * verified by count, bytes and SHA-1.
+ * It is https://img.boldeimaging.com (AD-9): the public Backblaze bucket
+ * `boldeimaging-img` behind a proxied Cloudflare CNAME, with an edge cache
+ * rule in front. The cache matters: B2 throttles bursts
+ * (`{"code":"too_busy"}`) and one page view asks for ~66 objects, so the
+ * bucket must never be reached except through Cloudflare. The bucket holds
+ * the 351 images that used to sit in public/media/, verified by SHA-1.
  *
- * Why not stream from Backblaze as the Workers build did through /img: that
- * route only held up because Cloudflare's edge cache sat in front of it. B2
- * throttles bursts (`{"code":"too_busy"}`) and one page view asks for ~66
- * objects, so without a cache every cold visit would hit the throttle.
- * Railway has no edge cache, and the bytes are already on the server.
+ * The hero video is not an image and stays on this site's own server under
+ * /media (see src/pages/index.astro).
  *
- * Override for a specific build with PUBLIC_MEDIA_BASE, e.g. once images get
- * their own hostname under AD-9:
- *
- *   PUBLIC_MEDIA_BASE=https://img.boldeimaging.com npm run build
+ * Override for a specific build with PUBLIC_MEDIA_BASE.
  */
 export const MEDIA_BASE: string =
-  import.meta.env.PUBLIC_MEDIA_BASE?.replace(/\/$/, '') || '/media';
+  import.meta.env.PUBLIC_MEDIA_BASE?.replace(/\/$/, '') || 'https://img.boldeimaging.com';
 
 /** Resolve an uploads-relative path, e.g. `2021/04/tribute14.jpg`. */
 export function media(path: string): string {

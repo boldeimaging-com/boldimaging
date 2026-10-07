@@ -5,13 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "astro dev",
-    "build": "node bin/fetch-gallery.mjs && astro build && node bin/check-seo.mjs",
+    "build": "node bin/fetch-gallery.mjs && astro build && node bin/check-seo.mjs && node bin/check-images.mjs",
     "start": "node server.mjs",
     "preview": "npm run build && node server.mjs",
     "check": "astro check",
     "db:migrate": "node bin/migrate.mjs",
     "gallery:fetch": "node bin/fetch-gallery.mjs",
-    "seo:lint": "node bin/check-seo.mjs"
+    "seo:lint": "node bin/check-seo.mjs",
+    "check:images": "node bin/check-images.mjs"
   },
   "dependencies": {
     "@astrojs/node": "^11.1.6",

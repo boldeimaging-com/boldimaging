@@ -338,25 +338,23 @@ be counterproductive: a crawler that is not allowed to fetch the page can never
 see the noindex header, and the address can still surface in results. Allow
 the crawl, refuse the index.
 
-### Images: served from this site's own /media
+### Images: served from img.boldeimaging.com
 
-Every image and the hero video are served from `public/media/`, by the same
-Node server as the pages, marked `immutable` for a year. Those files are
-byte-identical to the Backblaze B2 bucket `boldeimaging-img` — 351 files,
-verified by count, bytes and SHA-1 — which stays as the canonical store.
+Every image is served from `https://img.boldeimaging.com/`: the public
+Backblaze B2 bucket `boldeimaging-img` (351 files, verified by SHA-1 against
+the copies that used to sit in `public/media/`) behind a **proxied** Cloudflare
+CNAME, a URL rewrite rule (`/<path>` → `/file/boldeimaging-img/<path>`) and a
+cache rule (1 month at the edge). The hero video is not an image and is still
+served from `public/media/` by this site's own server.
 
-**Why not stream from Backblaze, as the Workers build did.** That `/img` route
-only held up because Cloudflare's edge cache sat in front of it. B2 throttles
-bursts with `{"code":"too_busy"}`, and one page view asks for ~66 objects, so
-without a cache every cold visit hits the throttle. Railway has no edge cache,
-and the bytes were already being deployed.
+**The Cloudflare edge cache is not optional here.** B2 throttles bursts with
+`{"code":"too_busy"}`, and one page view asks for ~66 objects, so the bucket
+must never be reached directly — never reference `*.backblazeb2.com`.
 
-Every image reference in the build was checked against the files on disk: 321
-distinct `/media/` addresses, 0 missing.
-
-```bash
-PUBLIC_MEDIA_BASE=https://img.boldeimaging.com npm run build   # if images move to their own hostname
-```
+Every image address in the build was checked against the bucket: 320
+distinct addresses on `img.boldeimaging.com`, 0 missing. `npm run build` ends
+with `bin/check-images.mjs`, which fails the build if any image in `dist/`
+comes from a host other than the one in `image-hosts.json`.
 
 ### Where it is reviewed
 
@@ -388,7 +386,7 @@ src/
   components/            Header, Footer, ThemeArchive, the two carousels
   pages/                 one file per address, plus 404 and /api/*
 public/
-  media/                 every image and the hero video, path-preserved
+  media/                 the hero video only (images live in the B2 bucket)
   fonts/                 the webfont files
 ```
 
@@ -405,7 +403,7 @@ own autostart switched off) and wraps it to do what a static host's
 `_headers` file used to:
 
 1. **Noindex off production**, by hostname — see "The stage is noindexed".
-2. **Cache lifetimes:** `/media/*` immutable for a year, `/sitemap.xsl` an hour
+2. **Cache lifetimes:** `/media/*` (the hero video) immutable for a year, `/sitemap.xsl` an hour
    with `Content-Type: text/xsl`. `/_astro/*` is already immutable from the
    adapter.
 3. **Trailing slashes:** a slashless page address (`/contact`) gets a 301 to
@@ -423,8 +421,8 @@ address nothing else matches.
 
 ### Images and the hero video
 
-Everything resolves through `MEDIA_BASE` in `src/consts.ts`, which defaults to
-`/media` and is served from `public/media` in this repo. **A build has zero
+Every image resolves through `MEDIA_BASE` in `src/consts.ts`, which defaults to
+`https://img.boldeimaging.com`; the hero video is `/media/…` on this server. **A build has zero
 references to the old WordPress server** — verify with:
 
 ```bash

@@ -33,9 +33,10 @@ export function pageUrl(origin: string, path: string): string {
 /**
  * Absolute URL for an uploads-relative image, e.g. `2021/04/tribute14.jpg`.
  *
- * Image sitemaps require absolute URLs, but MEDIA_BASE is `/media` by default
- * (images served by this site's own server) and becomes an absolute
- * https://img.boldeimaging.com if images are moved to their own hostname. Handle both, so the sitemap follows the images without an edit.
+ * Image sitemaps require absolute URLs. MEDIA_BASE is the absolute
+ * https://img.boldeimaging.com, but a build can override it with a path
+ * (PUBLIC_MEDIA_BASE=/media). Handle both, so the sitemap follows the images
+ * without an edit.
  */
 export function imageUrl(origin: string, path: string): string {
   const rel = path.replace(/^\//, '');
