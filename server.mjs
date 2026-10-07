@@ -32,6 +32,9 @@ const { handler } = await import('./dist/server/entry.mjs');
 
 const PRODUCTION_HOSTS = new Set(['boldeimaging.com', 'www.boldeimaging.com']);
 const CLIENT_DIR = fileURLToPath(new URL('./dist/client/', import.meta.url));
+// Pages rendered per request (Our Work and the admin), which have no
+// index.html in CLIENT_DIR for the trailing-slash check to find.
+const ON_DEMAND_PAGES = /^\/(services|portfolio\/[a-z0-9-]+|admin|admin\/work|admin\/work\/(new|\d+))$/;
 
 const bare = (v) => String(v ?? '').split(',')[0].trim().toLowerCase().replace(/:\d+$/, '');
 
@@ -62,9 +65,13 @@ const server = createServer((req, res) => {
     try {
       decoded = decodeURIComponent(path);
     } catch {}
-    // Only real page directories: /contact -> /contact/. Anything else (a
-    // typo, an /api route) falls through to the normal 404 or handler.
-    if (!decoded.includes('..') && existsSync(join(CLIENT_DIR, decoded, 'index.html'))) {
+    // Only real page directories: /contact -> /contact/, plus the pages that
+    // render on demand and so have no directory. Anything else (a typo, an
+    // /api route) falls through to the normal 404 or handler.
+    if (
+      ON_DEMAND_PAGES.test(decoded) ||
+      (!decoded.includes('..') && existsSync(join(CLIENT_DIR, decoded, 'index.html')))
+    ) {
       res.statusCode = 301;
       res.setHeader('Location', path + '/' + url.search);
       res.end();

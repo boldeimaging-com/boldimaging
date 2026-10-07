@@ -113,8 +113,10 @@ for (const f of walk(dist)) {
 // Cross-check the sitemaps against the canonical origin.
 import { existsSync } from 'node:fs';
 const sitemapLocs = [];
-for (const f of ['sitemap.xml', 'sitemap-pages.xml', 'sitemap-portfolio.xml',
-                 'sitemap-categories.xml', 'sitemap-images.xml']) {
+// sitemap-portfolio.xml and sitemap-images.xml are rendered on demand (the
+// Our Work entries are edited at /admin/work/), so they are not in the build
+// and cannot be checked here; they use the same urlset() and origin.
+for (const f of ['sitemap.xml', 'sitemap-pages.xml', 'sitemap-categories.xml']) {
   const path = join(dist, f);
   if (!existsSync(path)) { fails.push([f, 'sitemap missing from the build']); continue; }
   for (const m of readFileSync(path, 'utf8').matchAll(/<loc>(https?:\/\/[^/<]+)/g)) {

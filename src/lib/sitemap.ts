@@ -38,6 +38,8 @@ export function pageUrl(origin: string, path: string): string {
  * https://img.boldeimaging.com if images are moved to their own hostname. Handle both, so the sitemap follows the images without an edit.
  */
 export function imageUrl(origin: string, path: string): string {
+  // Images uploaded in the admin are served by this site, whatever MEDIA_BASE is.
+  if (path.startsWith('/work-media/')) return origin + path;
   const rel = path.replace(/^\//, '');
   return /^https?:\/\//.test(MEDIA_BASE)
     ? `${MEDIA_BASE}/${rel}`
@@ -48,6 +50,8 @@ export interface UrlEntry {
   path: string;
   /** uploads-relative image paths appearing on this page */
   images?: string[];
+  /** Overrides the LASTMOD table, for pages whose date lives in the database. */
+  lastmod?: string | null;
 }
 
 /**
@@ -71,8 +75,8 @@ const IMG_NS = 'http://www.google.com/schemas/sitemap-image/1.1';
 export function urlset(origin: string, entries: UrlEntry[]): string {
   const withImages = entries.some((e) => e.images?.length);
   const body = entries
-    .map(({ path, images }) => {
-      const lastmod = LASTMOD[path];
+    .map(({ path, images, lastmod: own }) => {
+      const lastmod = own ?? LASTMOD[path];
       const lines = [`    <loc>${xmlEscape(pageUrl(origin, path))}</loc>`];
       if (lastmod) lines.push(`    <lastmod>${lastmod}</lastmod>`);
       for (const img of images ?? []) {

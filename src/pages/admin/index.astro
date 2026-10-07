@@ -7,7 +7,7 @@
 // refresh never resubmits it. Changes apply to the live forms immediately:
 // /ftp/ fetches the reps from /api/reps/ and both endpoints read these tables
 // per request.
-import '../../styles/fonts.css';
+import Admin from '../../layouts/Admin.astro';
 import {
   adminConfigured,
   checkPassword,
@@ -29,9 +29,6 @@ import {
 } from '../../lib/settings';
 
 export const prerender = false;
-
-Astro.response.headers.set('Cache-Control', 'no-store');
-Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
 
 const back = (msg: string, ok = true) =>
   Astro.redirect(`/admin/?${new URLSearchParams({ [ok ? 'ok' : 'err']: msg })}`, 303);
@@ -105,284 +102,148 @@ if (Astro.request.method === 'POST') {
 }
 
 const signedIn = isSignedIn(Astro.cookies);
-const ok = Astro.url.searchParams.get('ok');
-const err = Astro.url.searchParams.get('err');
 const reps = signedIn ? await getReps() : null;
 const recipients = signedIn ? await getContactRecipients() : null;
 ---
 
-<!doctype html>
-<html lang="en-CA">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="robots" content="noindex, nofollow" />
-    <title>Website settings – BolDe Imaging</title>
-  </head>
-  <body>
-    <main class="wrap">
-      <header class="top">
-        <h1>Website settings</h1>
-        {
-          signedIn && (
-            <form method="post" action="/admin/">
-              <input type="hidden" name="action" value="logout" />
-              <button class="link" type="submit">Sign out</button>
-            </form>
-          )
-        }
-      </header>
+<Admin title="Website settings" signedIn={signedIn} active="settings">
+  {
+    !signedIn && !adminConfigured() && (
+      <p class="card">
+        Admin is not set up yet. Set the <code>ADMIN_PASSWORD</code> variable on the Railway web service,
+        then reload this page.
+      </p>
+    )
+  }
 
-      {ok && <p class="flash flash--ok" role="status">{ok}</p>}
-      {err && <p class="flash flash--err" role="alert">{err}</p>}
+  {
+    !signedIn && adminConfigured() && (
+      <form class="card login" method="post" action="/admin/">
+        <input type="hidden" name="action" value="login" />
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required autofocus />
+        <button type="submit">Sign in</button>
+      </form>
+    )
+  }
 
-      {
-        !signedIn && !adminConfigured() && (
-          <p class="card">
-            Admin is not set up yet. Set the <code>ADMIN_PASSWORD</code> variable on the Railway web service,
-            then reload this page.
+  {
+    signedIn && reps && recipients && (
+      <>
+        <section class="card">
+          <h2>File upload reps</h2>
+          <p class="hint">
+            The “Your Rep” choices on the <a href="/ftp/">File Upload</a> page, in this order. The rep a
+            customer picks is emailed their files.
           </p>
-        )
-      }
+          {reps.source === 'fallback' && (
+            <p class="flash flash--err">
+              Showing the built-in list because the database could not be read ({reps.error}). Changes
+              cannot be saved until it can.
+            </p>
+          )}
 
-      {
-        !signedIn && adminConfigured() && (
-          <form class="card login" method="post" action="/admin/">
-            <input type="hidden" name="action" value="login" />
-            <label for="password">Password</label>
-            <input id="password" name="password" type="password" autocomplete="current-password" required autofocus />
-            <button type="submit">Sign in</button>
+          <ol class="reps">
+            {reps.reps.map((rep, i) => (
+              <li class="rep">
+                <form class="rep__form" method="post" action="/admin/">
+                  <input type="hidden" name="id" value={String(rep.id ?? '')} />
+                  <label>
+                    <span>Name</span>
+                    <input name="name" value={rep.name} required maxlength="100" />
+                  </label>
+                  <label>
+                    <span>Email</span>
+                    <input name="email" type="email" value={rep.email} required />
+                  </label>
+                  <div class="rep__actions">
+                    <button name="action" value="update_rep" type="submit">Save</button>
+                    <button
+                      name="action"
+                      value="move_up"
+                      type="submit"
+                      class="icon"
+                      aria-label={`Move ${rep.name} up`}
+                      disabled={i === 0}
+                      formnovalidate
+                    >
+                      ↑
+                    </button>
+                    <button
+                      name="action"
+                      value="move_down"
+                      type="submit"
+                      class="icon"
+                      aria-label={`Move ${rep.name} down`}
+                      disabled={i === reps.reps.length - 1}
+                      formnovalidate
+                    >
+                      ↓
+                    </button>
+                    <button
+                      name="action"
+                      value="remove_rep"
+                      type="submit"
+                      class="danger"
+                      disabled={reps.reps.length === 1}
+                      formnovalidate
+                      data-confirm={`Remove ${rep.name} from the list?`}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </form>
+              </li>
+            ))}
+          </ol>
+
+          <form class="rep__form rep__form--add" method="post" action="/admin/">
+            <input type="hidden" name="action" value="add_rep" />
+            <label>
+              <span>Name</span>
+              <input name="name" required maxlength="100" placeholder="Jane Doe" />
+            </label>
+            <label>
+              <span>Email</span>
+              <input name="email" type="email" required placeholder="jane@boldeimaging.com" />
+            </label>
+            <div class="rep__actions">
+              <button type="submit">Add rep</button>
+            </div>
           </form>
-        )
-      }
+        </section>
 
-      {
-        signedIn && reps && recipients && (
-          <>
-            <section class="card">
-              <h2>File upload reps</h2>
-              <p class="hint">
-                The “Your Rep” choices on the <a href="/ftp/">File Upload</a> page, in this order. The rep a
-                customer picks is emailed their files.
-              </p>
-              {reps.source === 'fallback' && (
-                <p class="flash flash--err">
-                  Showing the built-in list because the database could not be read ({reps.error}). Changes
-                  cannot be saved until it can.
-                </p>
-              )}
-
-              <ol class="reps">
-                {reps.reps.map((rep, i) => (
-                  <li class="rep">
-                    <form class="rep__form" method="post" action="/admin/">
-                      <input type="hidden" name="id" value={String(rep.id ?? '')} />
-                      <label>
-                        <span>Name</span>
-                        <input name="name" value={rep.name} required maxlength="100" />
-                      </label>
-                      <label>
-                        <span>Email</span>
-                        <input name="email" type="email" value={rep.email} required />
-                      </label>
-                      <div class="rep__actions">
-                        <button name="action" value="update_rep" type="submit">Save</button>
-                        <button
-                          name="action"
-                          value="move_up"
-                          type="submit"
-                          class="icon"
-                          aria-label={`Move ${rep.name} up`}
-                          disabled={i === 0}
-                          formnovalidate
-                        >
-                          ↑
-                        </button>
-                        <button
-                          name="action"
-                          value="move_down"
-                          type="submit"
-                          class="icon"
-                          aria-label={`Move ${rep.name} down`}
-                          disabled={i === reps.reps.length - 1}
-                          formnovalidate
-                        >
-                          ↓
-                        </button>
-                        <button
-                          name="action"
-                          value="remove_rep"
-                          type="submit"
-                          class="danger"
-                          disabled={reps.reps.length === 1}
-                          formnovalidate
-                          data-confirm={`Remove ${rep.name} from the list?`}
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    </form>
-                  </li>
-                ))}
-              </ol>
-
-              <form class="rep__form rep__form--add" method="post" action="/admin/">
-                <input type="hidden" name="action" value="add_rep" />
-                <label>
-                  <span>Name</span>
-                  <input name="name" required maxlength="100" placeholder="Jane Doe" />
-                </label>
-                <label>
-                  <span>Email</span>
-                  <input name="email" type="email" required placeholder="jane@boldeimaging.com" />
-                </label>
-                <div class="rep__actions">
-                  <button type="submit">Add rep</button>
-                </div>
-              </form>
-            </section>
-
-            <section class="card">
-              <h2>Contact form recipients</h2>
-              <p class="hint">
-                Every enquiry from the <a href="/contact/">Contact</a> page is emailed to these addresses. They
-                are also copied on every file upload. One address per line.
-              </p>
-              {recipients.source === 'variable' && (
-                <p class="hint">
-                  Currently taken from the <code>CONTACT_TO</code> Railway variable. Saving here replaces it.
-                </p>
-              )}
-              {recipients.source === 'none' && (
-                <p class="flash flash--err">No recipients are set, so enquiries are not being emailed.</p>
-              )}
-              <form method="post" action="/admin/">
-                <input type="hidden" name="action" value="save_recipients" />
-                {/* One line: whitespace inside a textarea is part of its value. */}
-                <textarea name="recipients" rows={Math.max(3, recipients.recipients.length + 1)} required>{recipients.recipients.join('\n')}</textarea>
-                <button type="submit">Save recipients</button>
-              </form>
-            </section>
-          </>
-        )
-      }
-    </main>
-
-    <script is:inline>
-      document.addEventListener('click', function (e) {
-        var b = e.target.closest('[data-confirm]');
-        if (b && !confirm(b.getAttribute('data-confirm'))) e.preventDefault();
-      });
-    </script>
-  </body>
-</html>
-
-<style is:global>
-  :root {
-    color-scheme: light;
+        <section class="card">
+          <h2>Contact form recipients</h2>
+          <p class="hint">
+            Every enquiry from the <a href="/contact/">Contact</a> page is emailed to these addresses. They
+            are also copied on every file upload. One address per line.
+          </p>
+          {recipients.source === 'variable' && (
+            <p class="hint">
+              Currently taken from the <code>CONTACT_TO</code> Railway variable. Saving here replaces it.
+            </p>
+          )}
+          {recipients.source === 'none' && (
+            <p class="flash flash--err">No recipients are set, so enquiries are not being emailed.</p>
+          )}
+          <form method="post" action="/admin/">
+            <input type="hidden" name="action" value="save_recipients" />
+            {/* One line: whitespace inside a textarea is part of its value. */}
+            <textarea name="recipients" rows={Math.max(3, recipients.recipients.length + 1)} required>{recipients.recipients.join('\n')}</textarea>
+            <button type="submit">Save recipients</button>
+          </form>
+        </section>
+      </>
+    )
   }
-  body {
-    margin: 0;
-    background: #f4f4f4;
-    color: #222;
-    font-family: 'Titillium Web', system-ui, sans-serif;
-    font-size: 16px;
-    line-height: 1.5;
-  }
-</style>
+</Admin>
 
 <style>
-  .wrap {
-    max-width: 760px;
-    margin: 0 auto;
-    padding: 32px 16px 64px;
-  }
-  .top {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-  }
-  h1 {
-    margin: 0 0 16px;
-    font-size: 28px;
-  }
-  h2 {
-    margin: 0 0 4px;
-    font-size: 20px;
-  }
-  .card {
-    margin: 0 0 24px;
-    padding: 20px;
-    background: #fff;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-  }
-  .hint {
-    margin: 0 0 12px;
-    color: #555;
-  }
-  .flash {
-    margin: 0 0 16px;
-    padding: 10px 14px;
-    border-radius: 4px;
-  }
-  .flash--ok {
-    background: #e7f5ea;
-    color: #1d5e2c;
-  }
-  .flash--err {
-    background: #fdecec;
-    color: #8a1c1c;
-  }
   .login {
     display: grid;
     gap: 8px;
     max-width: 320px;
-  }
-  input,
-  textarea {
-    width: 100%;
-    box-sizing: border-box;
-    padding: 8px 10px;
-    border: 1px solid #999;
-    border-radius: 4px;
-    font: inherit;
-  }
-  textarea {
-    display: block;
-    margin-bottom: 12px;
-    resize: vertical;
-  }
-  button {
-    padding: 8px 14px;
-    border: 1px solid #333;
-    border-radius: 4px;
-    background: #333;
-    color: #fff;
-    font: inherit;
-    cursor: pointer;
-  }
-  button:disabled {
-    opacity: 0.35;
-    cursor: default;
-  }
-  button.icon {
-    padding: 8px 12px;
-    background: #fff;
-    color: #333;
-  }
-  button.danger {
-    background: #fff;
-    border-color: #b42318;
-    color: #b42318;
-  }
-  button.link {
-    border: 0;
-    background: none;
-    color: #333;
-    text-decoration: underline;
-    padding: 0;
   }
   .reps {
     margin: 0 0 16px;
@@ -410,6 +271,9 @@ const recipients = signedIn ? await getContactRecipients() : null;
   }
   .rep__form--add {
     padding-top: 4px;
+  }
+  textarea {
+    margin-bottom: 12px;
   }
   @media (max-width: 640px) {
     .rep__form {

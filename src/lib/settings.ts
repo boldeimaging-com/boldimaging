@@ -8,7 +8,7 @@
  * tables existed. Writes do throw: the admin page has to say when a save
  * did not happen.
  */
-import { getPool } from './db';
+import { getPool, moveByPosition } from './db';
 
 export interface Rep {
   id: number | null;
@@ -138,29 +138,4 @@ export async function removeRep(id: number): Promise<void> {
 }
 
 /** Swap a rep with its neighbour above (-1) or below (+1). */
-export async function moveRep(id: number, dir: -1 | 1): Promise<void> {
-  const client = await requirePool().connect();
-  try {
-    await client.query('BEGIN');
-    const rows = (
-      await client.query<{ id: string }>('SELECT id FROM ftp_reps ORDER BY position, id FOR UPDATE')
-    ).rows.map((r) => Number(r.id));
-    const i = rows.indexOf(id);
-    const j = i + dir;
-    if (i >= 0 && j >= 0 && j < rows.length) {
-      [rows[i], rows[j]] = [rows[j], rows[i]];
-      // Renumber everything, which also repairs any gaps or ties.
-      await client.query(
-        `UPDATE ftp_reps AS r SET position = v.pos, updated_at = now()
-         FROM unnest($1::bigint[]) WITH ORDINALITY AS v(id, pos) WHERE r.id = v.id`,
-        [rows],
-      );
-    }
-    await client.query('COMMIT');
-  } catch (e) {
-    await client.query('ROLLBACK').catch(() => {});
-    throw e;
-  } finally {
-    client.release();
-  }
-}
+export const moveRep = (id: number, dir: -1 | 1) => moveByPosition('ftp_reps', id, dir);

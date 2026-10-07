@@ -10,11 +10,15 @@
 //               front  the featured image, cover center, opacity 1 -> 0
 //               back   same image under rgba(58,58,58,0.78), opacity 0 -> 1
 //                      title 21/21 600, tags 14/21 400, ghost button 2px #fff
+//
+// Rendered on demand: the entries are edited at /admin/work/ and show up here
+// at once. See src/lib/portfolio-source.ts.
 import Base from '../layouts/Base.astro';
-import { media } from '../consts';
-import { PORTFOLIO } from '../data/portfolio';
+import { getPortfolio, workImage } from '../lib/portfolio-source';
 
-export const prerender = true;
+export const prerender = false;
+
+const { items } = await getPortfolio();
 
 const CATEGORY_HREF: Record<string, string> = {
   Exterior: '/category/exterior/',
@@ -39,10 +43,10 @@ const CATEGORY_HREF: Record<string, string> = {
       <div class="grid-col">
         <div class="grid">
           {
-            PORTFOLIO.map((item) => (
+            items.map((item) => (
               <article class="flip-box">
-                <div class="flip-box__front" style={`background-image:url('${media(item.grid)}')`}></div>
-                <div class="flip-box__back" style={`background-image:url('${media(item.grid)}')`}>
+                <div class="flip-box__front" style={`background-image:url('${workImage(item.grid)}')`}></div>
+                <div class="flip-box__back" style={`background-image:url('${workImage(item.grid)}')`}>
                   <div class="flip-box__overlay">
                     <div class="flip-box__inner">
                       <h3 class="flip-box__title">{item.title}</h3>

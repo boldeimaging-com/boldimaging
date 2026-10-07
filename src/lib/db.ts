@@ -24,3 +24,36 @@ export function getPool(): pg.Pool | null {
   pool.on('error', (e) => console.error('[db] idle client error:', e.message));
   return pool;
 }
+
+/**
+ * Swap a row with its neighbour above (-1) or below (+1) in a table ordered
+ * by an explicit `position` column, renumbering the whole list 1..n so gaps
+ * and ties repair themselves. Throws, for the admin to report.
+ */
+export async function moveByPosition(table: 'ftp_reps' | 'portfolio_items', id: number, dir: -1 | 1) {
+  const db = getPool();
+  if (!db) throw new Error('DATABASE_URL is not set');
+  const client = await db.connect();
+  try {
+    await client.query('BEGIN');
+    const rows = (
+      await client.query<{ id: string }>(`SELECT id FROM ${table} ORDER BY position, id FOR UPDATE`)
+    ).rows.map((r) => Number(r.id));
+    const i = rows.indexOf(id);
+    const j = i + dir;
+    if (i >= 0 && j >= 0 && j < rows.length) {
+      [rows[i], rows[j]] = [rows[j], rows[i]];
+      await client.query(
+        `UPDATE ${table} AS r SET position = v.pos
+         FROM unnest($1::bigint[]) WITH ORDINALITY AS v(id, pos) WHERE r.id = v.id`,
+        [rows],
+      );
+    }
+    await client.query('COMMIT');
+  } catch (e) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw e;
+  } finally {
+    client.release();
+  }
+}

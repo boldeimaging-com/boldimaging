@@ -9,35 +9,29 @@
 //   #fa4aa83  body row       margin 50px 0; columns 65% image / 35% copy
 //   #c5d5ef7  sub-heading    Titillium 32/32 600 #808080
 //   #5ddb51e  copy           Titillium 15/22.5 400 #7A7A7A
+//
+// Rendered on demand from portfolio_items, so an entry added at /admin/work/
+// has its page at once. Prev/Next follow the Our Work grid order.
 import Base from '../../layouts/Base.astro';
 import { metaDescription, describeListing } from '../../lib/seo';
-import { media } from '../../consts';
-import { PORTFOLIO } from '../../data/portfolio';
+import { getPortfolio, paragraphs, workImage } from '../../lib/portfolio-source';
 
-export const prerender = true;
+export const prerender = false;
 
-export function getStaticPaths() {
-  return PORTFOLIO.map((item, i) => ({
-    params: { slug: item.slug },
-    props: {
-      item,
-      prev: i > 0 ? PORTFOLIO[i - 1] : null,
-      next: i < PORTFOLIO.length - 1 ? PORTFOLIO[i + 1] : null,
-    },
-  }));
-}
+const { items } = await getPortfolio();
+const i = items.findIndex((p) => p.slug === Astro.params.slug);
+// An empty 404 makes Astro render src/pages/404.astro with that status.
+if (i < 0) return new Response(null, { status: 404 });
 
-const { item, prev, next } = Astro.props as {
-  item: (typeof PORTFOLIO)[number];
-  prev: (typeof PORTFOLIO)[number] | null;
-  next: (typeof PORTFOLIO)[number] | null;
-};
+const item = items[i];
+const prev = i > 0 ? items[i - 1] : null;
+const next = i < items.length - 1 ? items[i + 1] : null;
 ---
 
 <Base
   title={`${item.title} – BolDe Imaging`}
   description={metaDescription(item.body, describeListing(item.title))}
-  ogImage={new URL(media(item.image), Astro.site ?? 'https://boldeimaging.com').href}
+  ogImage={new URL(workImage(item.image), Astro.site ?? 'https://boldeimaging.com').href}
 >
   <section class="title-row page-top">
     <div class="container title-row__inner">
@@ -88,7 +82,7 @@ const { item, prev, next } = Astro.props as {
     <div class="container body-row__inner">
       <div class="col col--image">
         <img
-          src={media(item.image)}
+          src={workImage(item.image)}
           width={item.imageWidth}
           height={item.imageHeight}
           alt=""
@@ -97,7 +91,7 @@ const { item, prev, next } = Astro.props as {
       </div>
       <div class="col col--copy">
         <h2 class="sub-heading">{item.title}</h2>
-        {item.body && <div class="copy"><p>{item.body}</p></div>}
+        {item.body && <div class="copy">{paragraphs(item.body).map((p) => <p>{p}</p>)}</div>}
       </div>
     </div>
   </section>
