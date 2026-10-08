@@ -325,7 +325,9 @@ const solid = path !== '/';
   .mobile-nav .nav-item:hover,
   .mobile-nav .nav-item:focus,
   .mobile-nav .nav-item--active {
-    background-color: var(--e-global-color-6ad8614);
+    /* #0170b8, not brand #018be3: white on #018be3 is 3.61:1 at 14px bold
+       (WCAG AA needs 4.5:1). */
+    background-color: #0170b8;
   }
 
   @media (max-width: 1024px) {
