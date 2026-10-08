@@ -400,6 +400,19 @@ const solid = path !== '/';
           toggle.focus();
         }
       });
+      // The open panel overlays the page, so keyboard focus must not walk on
+      // into the content hidden behind it: close when focus leaves the header.
+      var headerEl = toggle.closest('header') || bar;
+      document.addEventListener('focusin', function (e) {
+        if (
+          headerEl &&
+          toggle.getAttribute('aria-expanded') === 'true' &&
+          !headerEl.contains(e.target)
+        ) {
+          toggle.setAttribute('aria-expanded', 'false');
+          panel.hidden = true;
+        }
+      });
     }
   })();
 </script>
