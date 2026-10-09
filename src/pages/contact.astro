@@ -137,7 +137,7 @@ const MAP_SRC =
     font-size: 18px;
     line-height: 27px;
     font-weight: 400;
-    color: var(--e-global-color-text);
+    color: var(--text-on-white, #707070); /* #7a7a7a was 4.29:1 on white; #707070 is 4.95:1 */
   }
 
   .intro p {
@@ -193,7 +193,7 @@ const MAP_SRC =
     font-size: 16px;
     line-height: 1;
     font-weight: 400;
-    color: var(--e-global-color-text);
+    color: var(--text-on-white, #707070); /* #7a7a7a was 4.29:1 on white; #707070 is 4.95:1 */
   }
 
   .eform__group input:not([type='file']),
@@ -208,7 +208,7 @@ const MAP_SRC =
     font-size: 15px;
     line-height: 21px;
     font-weight: 400;
-    color: var(--e-global-color-text);
+    color: var(--text-on-white, #707070); /* #7a7a7a was 4.29:1 on white; #707070 is 4.95:1 */
   }
 
   .eform__group textarea {
@@ -221,7 +221,7 @@ const MAP_SRC =
     width: 100%;
     background-color: #fff;
     font-family: var(--font-field);
-    color: var(--e-global-color-text);
+    color: var(--text-on-white, #707070); /* #7a7a7a was 4.29:1 on white; #707070 is 4.95:1 */
   }
 
   .eform__submit {
@@ -233,7 +233,7 @@ const MAP_SRC =
     padding: 0 24px;
     border: 0;
     border-radius: 3px;
-    background-color: var(--cyan);
+    background-color: #0077a8; /* --cyan #00aeef gave white 15px text 2.52:1; this is ~4.9:1 */
     font-family: var(--font-body);
     font-size: 15px;
     line-height: 15px;
@@ -252,7 +252,7 @@ const MAP_SRC =
     margin: 10px 0 0;
     font-family: var(--font-body);
     font-size: 16px;
-    color: var(--e-global-color-text);
+    color: var(--text-on-white, #707070); /* #7a7a7a was 4.29:1 on white; #707070 is 4.95:1 */
   }
 
   .eform__message[data-state='error'] {
@@ -282,7 +282,7 @@ const MAP_SRC =
     font-size: 18px;
     line-height: 27px;
     font-weight: 400;
-    color: var(--e-global-color-text);
+    color: var(--text-on-white, #707070); /* #7a7a7a was 4.29:1 on white; #707070 is 4.95:1 */
   }
 
   .careers-copy p {
