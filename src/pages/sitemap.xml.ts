@@ -16,7 +16,7 @@ import { originOf, sitemapIndex, xml } from '../lib/sitemap';
  * the product and image search is a real channel.
  *
  * The old /wp-sitemap*.xml addresses are deliberately NOT served here. Keeping
- * old addresses alive is a redirect job at the Cloudflare edge, covering every
+ * old addresses alive is a redirect job at the hosting edge, covering every
  * old address at once, not something to reimplement piecemeal in the app.
  */
 export const prerender = true;

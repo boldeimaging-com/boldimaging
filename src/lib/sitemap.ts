@@ -7,10 +7,10 @@
  * for anyone but us, and Google drops the lot.
  *
  * Trailing slashes matter here more than anywhere: the canonical tags, this
- * sitemap and the Worker must agree, or the site canonicalises to addresses
- * its own sitemap does not list. The three places that have to match are
- * `trailingSlash: 'always'` in astro.config.mjs, the paths below, and
- * `"html_handling": "auto-trailing-slash"` in wrangler.jsonc.
+ * sitemap and the server must agree, or the site canonicalises to addresses
+ * its own sitemap does not list. The places that have to match are
+ * `build.format: 'directory'` in astro.config.mjs, the paths below, and the
+ * slashless-to-slashed 301 in server.mjs.
  */
 import { MEDIA_BASE } from '../consts';
 import { LASTMOD } from '../data/lastmod';
@@ -34,11 +34,12 @@ export function pageUrl(origin: string, path: string): string {
  * Absolute URL for an uploads-relative image, e.g. `2021/04/tribute14.jpg`.
  *
  * Image sitemaps require absolute URLs, but MEDIA_BASE is `/media` by default
- * (images served from the Worker's own assets) and becomes an absolute
- * https://img.boldeimaging.com once the Backblaze bucket is live behind
- * Cloudflare. Handle both, so the sitemap follows the images without an edit.
+ * (images served by this site's own server) and becomes an absolute
+ * https://img.boldeimaging.com if images are moved to their own hostname. Handle both, so the sitemap follows the images without an edit.
  */
 export function imageUrl(origin: string, path: string): string {
+  // Images uploaded in the admin are served by this site, whatever MEDIA_BASE is.
+  if (path.startsWith('/work-media/')) return origin + path;
   const rel = path.replace(/^\//, '');
   return /^https?:\/\//.test(MEDIA_BASE)
     ? `${MEDIA_BASE}/${rel}`
@@ -49,6 +50,8 @@ export interface UrlEntry {
   path: string;
   /** uploads-relative image paths appearing on this page */
   images?: string[];
+  /** Overrides the LASTMOD table, for pages whose date lives in the database. */
+  lastmod?: string | null;
 }
 
 /**
@@ -72,8 +75,8 @@ const IMG_NS = 'http://www.google.com/schemas/sitemap-image/1.1';
 export function urlset(origin: string, entries: UrlEntry[]): string {
   const withImages = entries.some((e) => e.images?.length);
   const body = entries
-    .map(({ path, images }) => {
-      const lastmod = LASTMOD[path];
+    .map(({ path, images, lastmod: own }) => {
+      const lastmod = own ?? LASTMOD[path];
       const lines = [`    <loc>${xmlEscape(pageUrl(origin, path))}</loc>`];
       if (lastmod) lines.push(`    <lastmod>${lastmod}</lastmod>`);
       for (const img of images ?? []) {

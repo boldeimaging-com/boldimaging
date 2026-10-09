@@ -6,14 +6,15 @@
 -- customer had ever written in. Every handler now writes the row first and
 -- sends second, so a delivery failure costs a notification, never the enquiry.
 --
--- Timestamps are stored as ISO-8601 UTC strings via strftime rather than
--- datetime('now'): SQLite's default has no timezone marker and no
--- milliseconds, which makes it ambiguous the moment anything outside D1 reads
--- it. Applied with:  npm run db:migrate  (see package.json)
+-- Postgres (Railway). Ported from the original D1/SQLite schema: identity
+-- columns replace AUTOINCREMENT and timestamps are real timestamptz in UTC,
+-- which removes the ambiguity the ISO-string workaround existed for.
+-- Applied by bin/migrate.mjs (`npm run db:migrate`, Railway's pre-deploy
+-- command), which records each file in schema_migrations and runs it once.
 
 CREATE TABLE IF NOT EXISTS contact_submissions (
-  id               INTEGER PRIMARY KEY AUTOINCREMENT,
-  created_at       TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  id               BIGINT  GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
 
   name             TEXT    NOT NULL,
   last_name        TEXT,
@@ -47,11 +48,12 @@ CREATE INDEX IF NOT EXISTS idx_contact_created  ON contact_submissions (created_
 CREATE INDEX IF NOT EXISTS idx_contact_status   ON contact_submissions (delivery_status)
   WHERE delivery_status <> 'sent';
 
--- One row per upload batch on /ftp/. The files themselves live in R2; this
+-- One row per upload batch on /ftp/. The files themselves live in the uploads
+-- bucket (S3-compatible; see src/lib/uploads.ts); this
 -- records who sent what, to which rep, and where the objects landed.
 CREATE TABLE IF NOT EXISTS ftp_uploads (
-  id               INTEGER PRIMARY KEY AUTOINCREMENT,
-  created_at       TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  id               BIGINT  GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
 
   full_name        TEXT    NOT NULL,
   email            TEXT    NOT NULL,
@@ -59,15 +61,15 @@ CREATE TABLE IF NOT EXISTS ftp_uploads (
   rep              TEXT    NOT NULL,
   message          TEXT,
 
-  -- Declared counts, written before the R2 puts are attempted. Comparing these
+  -- Declared counts, written before the bucket puts are attempted. Comparing these
   -- against the rows actually in ftp_upload_files is how a partial upload is
   -- detected after the fact.
   file_count       INTEGER NOT NULL,
-  total_bytes      INTEGER NOT NULL,
-  r2_prefix        TEXT    NOT NULL,
+  total_bytes      BIGINT  NOT NULL,
+  storage_prefix   TEXT    NOT NULL,
 
   -- 'receiving' until every file is stored; then the send is attempted.
-  -- 'stored' means the files are safe in R2 but the rep was never told, which
+  -- 'stored' means the files are safe in the bucket but the rep was never told, which
   -- is recoverable and needs to be visibly different from a clean 'sent'.
   upload_status    TEXT    NOT NULL DEFAULT 'receiving'
                    CHECK (upload_status IN ('receiving', 'stored', 'failed')),
@@ -87,15 +89,15 @@ CREATE INDEX IF NOT EXISTS idx_ftp_rep     ON ftp_uploads (rep, created_at DESC)
 CREATE INDEX IF NOT EXISTS idx_ftp_open    ON ftp_uploads (upload_status, delivery_status)
   WHERE upload_status <> 'stored' OR delivery_status <> 'sent';
 
--- One row per file, written as each object lands in R2. Rows exist only for
+-- One row per file, written as each object lands in the bucket. Rows exist only for
 -- files that actually stored, so a batch that failed halfway leaves a truthful
 -- partial list rather than a claim about files that are not there.
 CREATE TABLE IF NOT EXISTS ftp_upload_files (
-  id            INTEGER PRIMARY KEY AUTOINCREMENT,
-  upload_id     INTEGER NOT NULL REFERENCES ftp_uploads (id) ON DELETE CASCADE,
+  id            BIGINT  GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  upload_id     BIGINT  NOT NULL REFERENCES ftp_uploads (id) ON DELETE CASCADE,
   object_key    TEXT    NOT NULL,
   original_name TEXT    NOT NULL,
-  bytes         INTEGER NOT NULL,
+  bytes         BIGINT  NOT NULL,
   content_type  TEXT
 );
 

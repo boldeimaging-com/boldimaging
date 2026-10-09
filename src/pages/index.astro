@@ -38,8 +38,9 @@ import { ASSOCIATIONS, CLIENTS, HOME_BACKGROUNDS, PROJECT_GALLERIES } from '../d
 
 export const prerender = true;
 
-// Served from the Worker's own static assets (/media), NOT media(): /img proxies
-// the Backblaze bucket, which does not contain this derived poster.
+// Always the server's own copy under /media, NOT media(): if MEDIA_BASE is
+// ever pointed at the Backblaze bucket, that bucket does not contain this
+// derived poster.
 const POSTER = '/media/2025/04/Bolde-Imaging-Video-poster.webp';
 ---
 

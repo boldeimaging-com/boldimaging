@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { CLIENTS, ASSOCIATIONS, PROJECT_GALLERIES, HOME_BACKGROUNDS, LOGO } from '../data/home';
 import { GALLERY_ITEMS } from '../data/gallery';
-import { PORTFOLIO } from '../data/portfolio';
+import { getPortfolio } from '../lib/portfolio-source';
 import { originOf, urlset, xml, type UrlEntry } from '../lib/sitemap';
 
 /**
@@ -28,10 +28,12 @@ import { originOf, urlset, xml, type UrlEntry } from '../lib/sitemap';
  *
  * Limits are 1,000 images per page entry and 50,000 URLs per sitemap. The
  * biggest entry here is /gallery/ at 116, so there is a lot of headroom.
+ *
+ * On demand, because the Our Work entries are edited at /admin/work/.
  */
-export const prerender = true;
+export const prerender = false;
 
-const ENTRIES: UrlEntry[] = [
+const STATIC_ENTRIES: UrlEntry[] = [
   {
     path: '/',
     images: [
@@ -44,15 +46,17 @@ const ENTRIES: UrlEntry[] = [
       ...PROJECT_GALLERIES.map((i) => i.src),
     ],
   },
-  { path: '/services/', images: PORTFOLIO.map((i) => i.grid) },
   { path: '/gallery/', images: GALLERY_ITEMS.map((i) => i.full) },
-  ...PORTFOLIO.map((item) => ({
-    path: `/portfolio/${item.slug}/`,
-    images: [item.image],
-  })),
 ];
 
-export const GET: APIRoute = ({ site }) => {
+export const GET: APIRoute = async ({ site }) => {
+  const { items } = await getPortfolio();
+  const ENTRIES: UrlEntry[] = [
+    STATIC_ENTRIES[0],
+    { path: '/services/', images: items.map((i) => i.grid) },
+    ...STATIC_ENTRIES.slice(1),
+    ...items.map((item) => ({ path: `/portfolio/${item.slug}/`, images: [item.image] })),
+  ];
   // De-duplicate within each page: the same file can legitimately appear twice
   // in a page's data (a portfolio grid image reused as its own hero), and a
   // repeated <image:loc> under one <url> is invalid.

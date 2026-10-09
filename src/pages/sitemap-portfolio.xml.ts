@@ -1,18 +1,21 @@
 import type { APIRoute } from 'astro';
-import { PORTFOLIO } from '../data/portfolio';
+import { getPortfolio } from '../lib/portfolio-source';
 import { originOf, urlset, xml } from '../lib/sitemap';
 
 /**
- * The twelve portfolio entries, the custom post type WordPress published at
- * wp-sitemap-posts-portfolio-1.xml. PORTFOLIO is already in sitemap order, so
- * adding an entry to that file adds it here with nothing else to remember.
+ * The portfolio entries, the custom post type WordPress published at
+ * wp-sitemap-posts-portfolio-1.xml. On demand, from the same rows as the
+ * pages, so an entry added at /admin/work/ is listed at once. <lastmod> is
+ * the row's updated_at, seeded with WordPress's own dates.
  */
-export const prerender = true;
+export const prerender = false;
 
-export const GET: APIRoute = ({ site }) =>
-  xml(
+export const GET: APIRoute = async ({ site }) => {
+  const { items } = await getPortfolio();
+  return xml(
     urlset(
       originOf(site),
-      PORTFOLIO.map((item) => ({ path: `/portfolio/${item.slug}/` })),
+      items.map((item) => ({ path: `/portfolio/${item.slug}/`, lastmod: item.updatedAt })),
     ),
   );
+};
