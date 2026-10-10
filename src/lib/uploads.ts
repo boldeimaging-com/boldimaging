@@ -32,6 +32,16 @@ export interface UploadStore {
 /** Encode each path segment, keep the slashes. */
 const encodeKey = (key: string) => key.split('/').map(encodeURIComponent).join('/');
 
+const REQUIRED_VARS = [
+  'UPLOADS_ENDPOINT',
+  'UPLOADS_BUCKET',
+  'UPLOADS_ACCESS_KEY_ID',
+  'UPLOADS_SECRET_ACCESS_KEY',
+] as const;
+
+/** Names (never values) of the required variables that are unset or empty. */
+export const missingUploadVars = (): string[] => REQUIRED_VARS.filter((name) => !process.env[name]);
+
 export function getUploadStore(): UploadStore | null {
   const e = process.env;
   const endpoint = e.UPLOADS_ENDPOINT?.replace(/\/$/, '');

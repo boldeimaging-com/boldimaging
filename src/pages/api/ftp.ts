@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { getUploadStore, LINK_TTL_SECONDS } from '../../lib/uploads';
+import { getUploadStore, LINK_TTL_SECONDS, missingUploadVars } from '../../lib/uploads';
 import { getContactRecipients, getReps } from '../../lib/settings';
 import {
   openUpload,
@@ -111,7 +111,9 @@ export const POST: APIRoute = async ({ request }) => {
   });
 
   if (!store || !bindings.RESEND_API_KEY) {
-    await setUploadStatus(record.id, 'failed', 'UPLOADS_* or RESEND_API_KEY variable missing');
+    // Name exactly which variables are missing, so the row says what to fix.
+    const missing = [...missingUploadVars(), ...(bindings.RESEND_API_KEY ? [] : ['RESEND_API_KEY'])];
+    await setUploadStatus(record.id, 'failed', `variable missing: ${missing.join(', ') || 'UPLOADS_*'}`);
     await setDelivery('ftp_uploads', record.id, 'unconfigured');
     return json(
       503,
