@@ -27,13 +27,14 @@ const CATEGORY_HREF: Record<string, string> = {
 ---
 
 <Base
-  title="Our Work – BolDe Imaging"
-  description="Signage projects by BolDe Imaging: wayfinding, pylon, push thru, interiors, hoarding, cut out letters, awnings, fascia, channel letters and banners."
+  title="Custom Signage Projects in Mississauga | BolDe Imaging"
+  description="Explore BolDe Imaging signage projects in Mississauga: channel letters, wayfinding, pylon signs, interiors and banners. Contact us to request a quote."
 >
   <section class="title-row page-top">
     <div class="container">
       <div class="title-col">
         <h1 class="page-title">Our Work</h1>
+        <p class="project-intro">Explore our signage projects, then <a href="/contact/">request a quote for your project</a> or <a href="/gallery/">browse the project gallery</a>.</p>
       </div>
     </div>
   </section>
@@ -49,7 +50,7 @@ const CATEGORY_HREF: Record<string, string> = {
                 <div class="flip-box__back" style={`background-image:url('${workImage(item.grid)}')`}>
                   <div class="flip-box__overlay">
                     <div class="flip-box__inner">
-                      <h3 class="flip-box__title">{item.title}</h3>
+                      <h2 class="flip-box__title">{item.title}</h2>
                       <div class="flip-box__desc">
                         {
                           item.categories.map((name, i) => (
@@ -76,6 +77,10 @@ const CATEGORY_HREF: Record<string, string> = {
 </Base>
 
 <style>
+  .project-intro { margin: 18px 0 0; max-width: 65ch; font-size: 18px; line-height: 1.5; color: #595959; }
+  .project-intro a { color: #005a9c; text-decoration: underline; text-underline-offset: 3px; }
+  .project-intro a:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+
   .title-col,
   .grid-col {
     padding: 10px;
