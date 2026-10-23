@@ -1,0 +1,249 @@
+[
+  {
+    "path": "/",
+    "old": {
+      "status": 200,
+      "title": "BolDe Imaging",
+      "forms": 0
+    },
+    "astro": {
+      "status": 200,
+      "title": "Signage Manufacturer in Mississauga | BolDe Imaging",
+      "forms": 0
+    }
+  },
+  {
+    "path": "/services/",
+    "old": {
+      "status": 200,
+      "title": "Our Work &#8211; BolDe Imaging",
+      "forms": 0
+    },
+    "astro": {
+      "status": 200,
+      "title": "Our Work – BolDe Imaging",
+      "forms": 0
+    }
+  },
+  {
+    "path": "/category/exterior/",
+    "old": {
+      "status": 200,
+      "title": "Exterior &#8211; BolDe Imaging",
+      "forms": 0
+    },
+    "astro": {
+      "status": 200,
+      "title": "Exterior – BolDe Imaging",
+      "forms": 0
+    }
+  },
+  {
+    "path": "/category/interior/",
+    "old": {
+      "status": 200,
+      "title": "Interior &#8211; BolDe Imaging",
+      "forms": 0
+    },
+    "astro": {
+      "status": 200,
+      "title": "Interior – BolDe Imaging",
+      "forms": 0
+    }
+  },
+  {
+    "path": "/portfolio/wayfinding/",
+    "old": {
+      "status": 200,
+      "title": "Wayfinding &#8211; BolDe Imaging",
+      "forms": 0
+    },
+    "astro": {
+      "status": 200,
+      "title": "Wayfinding – BolDe Imaging",
+      "forms": 0
+    }
+  },
+  {
+    "path": "/portfolio/pylon-signs/",
+    "old": {
+      "status": 200,
+      "title": "Pylon Signs &#8211; BolDe Imaging",
+      "forms": 0
+    },
+    "astro": {
+      "status": 200,
+      "title": "Pylon Signs – BolDe Imaging",
+      "forms": 0
+    }
+  },
+  {
+    "path": "/portfolio/push-thru-signs/",
+    "old": {
+      "status": 200,
+      "title": "Push Thru Signs &#8211; BolDe Imaging",
+      "forms": 0
+    },
+    "astro": {
+      "status": 200,
+      "title": "Push Thru Signs – BolDe Imaging",
+      "forms": 0
+    }
+  },
+  {
+    "path": "/portfolio/interiors/",
+    "old": {
+      "status": 200,
+      "title": "Interiors &#8211; BolDe Imaging",
+      "forms": 0
+    },
+    "astro": {
+      "status": 200,
+      "title": "Interiors – BolDe Imaging",
+      "forms": 0
+    }
+  },
+  {
+    "path": "/portfolio/hoarding-signs/",
+    "old": {
+      "status": 200,
+      "title": "Hoarding Signs &#8211; BolDe Imaging",
+      "forms": 0
+    },
+    "astro": {
+      "status": 200,
+      "title": "Hoarding Signs – BolDe Imaging",
+      "forms": 0
+    }
+  },
+  {
+    "path": "/portfolio/cut-out-letters/",
+    "old": {
+      "status": 200,
+      "title": "Cut Out letters &#8211; BolDe Imaging",
+      "forms": 0
+    },
+    "astro": {
+      "status": 200,
+      "title": "Cut Out letters – BolDe Imaging",
+      "forms": 0
+    }
+  },
+  {
+    "path": "/portfolio/construction-development-sales-offices/",
+    "old": {
+      "status": 200,
+      "title": "Construction, Development &#038; Sales Offices &#8211; BolDe Imaging",
+      "forms": 0
+    },
+    "astro": {
+      "status": 200,
+      "title": "Construction, Development &amp; Sales Offices – BolDe Imaging",
+      "forms": 0
+    }
+  },
+  {
+    "path": "/portfolio/awnings/",
+    "old": {
+      "status": 200,
+      "title": "Awnings &#8211; BolDe Imaging",
+      "forms": 0
+    },
+    "astro": {
+      "status": 200,
+      "title": "Awnings – BolDe Imaging",
+      "forms": 0
+    }
+  },
+  {
+    "path": "/portfolio/fascia-signs/",
+    "old": {
+      "status": 200,
+      "title": "Fascia Signs &#8211; BolDe Imaging",
+      "forms": 0
+    },
+    "astro": {
+      "status": 200,
+      "title": "Fascia Signs – BolDe Imaging",
+      "forms": 0
+    }
+  },
+  {
+    "path": "/portfolio/custom-signage/",
+    "old": {
+      "status": 200,
+      "title": "Custom Signage &#8211; BolDe Imaging",
+      "forms": 0
+    },
+    "astro": {
+      "status": 200,
+      "title": "Custom Signage – BolDe Imaging",
+      "forms": 0
+    }
+  },
+  {
+    "path": "/portfolio/channel-letters/",
+    "old": {
+      "status": 200,
+      "title": "Channel Letters &#8211; BolDe Imaging",
+      "forms": 0
+    },
+    "astro": {
+      "status": 200,
+      "title": "Channel Letters – BolDe Imaging",
+      "forms": 0
+    }
+  },
+  {
+    "path": "/portfolio/banners/",
+    "old": {
+      "status": 200,
+      "title": "Banners &#8211; BolDe Imaging",
+      "forms": 0
+    },
+    "astro": {
+      "status": 200,
+      "title": "Banners – BolDe Imaging",
+      "forms": 0
+    }
+  },
+  {
+    "path": "/gallery/",
+    "old": {
+      "status": 200,
+      "title": "Gallery &#8211; BolDe Imaging",
+      "forms": 0
+    },
+    "astro": {
+      "status": 200,
+      "title": "Gallery – BolDe Imaging",
+      "forms": 0
+    }
+  },
+  {
+    "path": "/contact/",
+    "old": {
+      "status": 200,
+      "title": "Contact &#8211; BolDe Imaging",
+      "forms": 1
+    },
+    "astro": {
+      "status": 200,
+      "title": "Contact – BolDe Imaging",
+      "forms": 1
+    }
+  },
+  {
+    "path": "/ftp/",
+    "old": {
+      "status": 200,
+      "title": "FTP &#8211; BolDe Imaging",
+      "forms": 1
+    },
+    "astro": {
+      "status": 200,
+      "title": "FTP – BolDe Imaging",
+      "forms": 1
+    }
+  }
+]

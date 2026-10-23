@@ -39,7 +39,7 @@
 
   /* --- one-off colours, kept where the original puts them --- */
   --page-title-grey: #808080; /* every page's 40px title */
-  --about-grey: #777777; /* "About Us." heading + copy */
+  --about-grey: #595959; /* "About Us." heading + copy. Was #777: 4.48:1 on pure white, ~3.8:1 over the 0.91 white overlay on the real photo */
   --cyan: #00aeef; /* contact submit, portfolio nav arrows */
   --blue-hover: #005a9c; /* "All Galleries" hover; white text ~7:1 (was #1d9ff2, 2.9:1) */
   --band-bebolde: #363636;

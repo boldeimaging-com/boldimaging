@@ -50,7 +50,7 @@ const solid = path !== '/';
 
     <div class="col col--nav">
       <div class="nav-widget">
-        <nav class="main-nav" aria-label="Menu">
+        <nav class="main-nav" aria-label="Main">
           <ul>
             {
               NAV.map((item) => (
@@ -84,7 +84,7 @@ const solid = path !== '/';
           <i class="eicon-close toggle-close" aria-hidden="true"></i>
         </button>
 
-        <nav class="mobile-nav" id="mobile-nav" aria-label="Menu" hidden>
+        <nav class="mobile-nav" id="mobile-nav" aria-label="Mobile" hidden>
           <ul>
             {
               NAV.map((item) => (
@@ -137,7 +137,10 @@ const solid = path !== '/';
 
   .bar.scrolled,
   .bar--solid {
-    background-color: rgba(58, 58, 58, 0.5);
+    /* 0.5 alpha over a white page composites to #9d9d9d, which gives the white
+       14px/700 nav labels 2.71:1 (axe color-contrast, /services/ and
+       /contact/). 0.75 composites to ~#6f6f6f over white: 5.2:1. */
+    background-color: rgba(58, 58, 58, 0.75);
     box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
     backdrop-filter: blur(9px);
     -webkit-backdrop-filter: blur(9px);
@@ -322,7 +325,9 @@ const solid = path !== '/';
   .mobile-nav .nav-item:hover,
   .mobile-nav .nav-item:focus,
   .mobile-nav .nav-item--active {
-    background-color: var(--e-global-color-6ad8614);
+    /* #0170b8, not brand #018be3: white on #018be3 is 3.61:1 at 14px bold
+       (WCAG AA needs 4.5:1). */
+    background-color: #0170b8;
   }
 
   @media (max-width: 1024px) {
@@ -393,6 +398,19 @@ const solid = path !== '/';
           toggle.setAttribute('aria-expanded', 'false');
           panel.hidden = true;
           toggle.focus();
+        }
+      });
+      // The open panel overlays the page, so keyboard focus must not walk on
+      // into the content hidden behind it: close when focus leaves the header.
+      var headerEl = toggle.closest('header') || bar;
+      document.addEventListener('focusin', function (e) {
+        if (
+          headerEl &&
+          toggle.getAttribute('aria-expanded') === 'true' &&
+          !headerEl.contains(e.target)
+        ) {
+          toggle.setAttribute('aria-expanded', 'false');
+          panel.hidden = true;
         }
       });
     }
