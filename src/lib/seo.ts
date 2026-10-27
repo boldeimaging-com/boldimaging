@@ -12,6 +12,8 @@
 
 const MAX = 160;
 const MIN = 50;
+const SHORT = 110;
+const SHORT_TAIL = 'BolDe Imaging, signage manufacturer in Mississauga, Ontario.';
 
 /**
  * Prefer a whole sentence that fits; otherwise cut on a word boundary and mark
@@ -20,7 +22,12 @@ const MIN = 50;
 export function metaDescription(body: string, fallback: string): string {
   const text = body.replace(/\s+/g, ' ').trim();
   if (!text || text.length < MIN) return clamp(fallback);
-  if (text.length <= MAX) return text;
+  if (text.length <= MAX) {
+    // Very short copy ("Whether you need a short banner...") says nothing about who
+    // or where; add the business and city already stated site-wide when it fits.
+    if (text.length < SHORT && `${text} ${SHORT_TAIL}`.length <= MAX) return `${text} ${SHORT_TAIL}`;
+    return text;
+  }
 
   // A run of complete sentences that still fits reads better than a hard cut.
   const sentences = text.match(/[^.!?]+[.!?]+/g) ?? [];
