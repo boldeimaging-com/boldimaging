@@ -15,6 +15,10 @@ const MIN = 50;
 const SHORT = 110;
 const SHORT_TAIL = 'BolDe Imaging, signage manufacturer in Mississauga, Ontario.';
 
+function withTail(t: string): string {
+  return t.length < SHORT && `${t} ${SHORT_TAIL}`.length <= MAX ? `${t} ${SHORT_TAIL}` : t;
+}
+
 /**
  * Prefer a whole sentence that fits; otherwise cut on a word boundary and mark
  * the cut with an ellipsis.
@@ -25,8 +29,7 @@ export function metaDescription(body: string, fallback: string): string {
   if (text.length <= MAX) {
     // Very short copy ("Whether you need a short banner...") says nothing about who
     // or where; add the business and city already stated site-wide when it fits.
-    if (text.length < SHORT && `${text} ${SHORT_TAIL}`.length <= MAX) return `${text} ${SHORT_TAIL}`;
-    return text;
+    return withTail(text);
   }
 
   // A run of complete sentences that still fits reads better than a hard cut.
@@ -37,7 +40,7 @@ export function metaDescription(body: string, fallback: string): string {
     built += s;
   }
   built = built.trim();
-  if (built.length >= MIN) return built;
+  if (built.length >= MIN) return withTail(built);
 
   // Otherwise trim to the last space that leaves room for the ellipsis.
   const cut = text.slice(0, MAX - 1);
