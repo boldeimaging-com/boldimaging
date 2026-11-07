@@ -117,6 +117,12 @@ const REPS = DEFAULT_REPS;
             </div>
           </div>
 
+          {/* Turnstile (lib/form-guard.ts). Invisible unless Cloudflare wants
+              a click; it adds cf-turnstile-response to the form. */}
+          <div class="jform__row">
+            <div class="cf-turnstile" data-sitekey="0x4AAAAAAF3sxxU2u4U8oilP" data-appearance="interaction-only" data-refresh-expired="auto"></div>
+          </div>
+
           <div class="jform__row">
             <button class="jform__submit" type="submit">Submit</button>
           </div>
@@ -313,7 +319,15 @@ const REPS = DEFAULT_REPS;
       out.removeAttribute('data-state');
       out.textContent = 'Uploading…';
       try {
-        var res = await fetch(form.action, { method: 'POST', body: new FormData(form) });
+        // The Turnstile token also goes in a header, so the server checks it
+        // as the upload starts rather than after it ends (lib/form-guard.ts).
+        var payload = new FormData(form);
+        var token = payload.get('cf-turnstile-response') || '';
+        var res = await fetch(form.action, {
+          method: 'POST',
+          headers: token ? { 'x-turnstile-token': token } : {},
+          body: payload,
+        });
         var data = await res.json().catch(function () {
           return {};
         });
@@ -329,6 +343,9 @@ const REPS = DEFAULT_REPS;
         out.textContent = 'Sorry, that could not be sent. Please try again.';
       }
       btn.disabled = false;
+      // A Turnstile token works once: get a fresh one for the next send.
+      if (window.turnstile) window.turnstile.reset();
     });
   })();
 </script>
+<script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>

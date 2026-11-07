@@ -95,6 +95,11 @@ const MAP_SRC =
               </label>
               <input type="file" id="c-file" name="attachment" />
             </div>
+            {/* Turnstile (lib/form-guard.ts). Invisible unless Cloudflare wants
+                a click; it adds cf-turnstile-response to the form. */}
+            <div class="eform__group">
+              <div class="cf-turnstile" data-sitekey="0x4AAAAAAF3sxxU2u4U8oilP" data-appearance="interaction-only" data-refresh-expired="auto"></div>
+            </div>
             <div class="eform__group">
               <button class="eform__submit" type="submit">
                 <span>Submit</span>
@@ -364,6 +369,9 @@ const MAP_SRC =
         out.textContent = 'Sorry, that could not be sent. Please try again.';
       }
       btn.disabled = false;
+      // A Turnstile token works once: get a fresh one for the next send.
+      if (window.turnstile) window.turnstile.reset();
     });
   })();
 </script>
+<script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
