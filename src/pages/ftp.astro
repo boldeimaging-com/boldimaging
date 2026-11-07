@@ -319,7 +319,15 @@ const REPS = DEFAULT_REPS;
       out.removeAttribute('data-state');
       out.textContent = 'Uploading…';
       try {
-        var res = await fetch(form.action, { method: 'POST', body: new FormData(form) });
+        // The Turnstile token also goes in a header, so the server checks it
+        // as the upload starts rather than after it ends (lib/form-guard.ts).
+        var payload = new FormData(form);
+        var token = payload.get('cf-turnstile-response') || '';
+        var res = await fetch(form.action, {
+          method: 'POST',
+          headers: token ? { 'x-turnstile-token': token } : {},
+          body: payload,
+        });
         var data = await res.json().catch(function () {
           return {};
         });

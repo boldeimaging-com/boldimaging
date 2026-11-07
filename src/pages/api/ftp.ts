@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { getUploadStore, LINK_TTL_SECONDS } from '../../lib/uploads';
 import { getContactRecipients, getReps } from '../../lib/settings';
-import { stagingRecipients, turnstile } from '../../lib/form-guard';
+import { formToken, headerToken, stagingRecipients, turnstile } from '../../lib/form-guard';
 import {
   openUpload,
   recordUploadFiles,
@@ -65,6 +65,21 @@ export const POST: APIRoute = async ({ request }) => {
   const bindings = process.env;
   const store = getUploadStore();
 
+  // Turnstile first, from the header, before a byte of the upload is read: a
+  // token lasts five minutes and a 350 MB upload can take longer than that, so
+  // checking it after the body arrived would refuse slow uploads at the end.
+  // (A form posted without the page's script has no header; its token is
+  // checked from the form below, which is fine for a small upload.)
+  const sent = headerToken(request);
+  if (sent || !process.env.TURNSTILE_SECRET_KEY) {
+    const early = await turnstile(request, sent);
+    if (early === 'unconfigured') {
+      console.error('ftp: TURNSTILE_SECRET_KEY is not set');
+      return json(503, 'File upload is not connected yet. Please email your files to info@boldeimaging.com or call (416) 241 2800.');
+    }
+    if (early === 'failed') return json(400, 'The security check did not pass. Please try again.');
+  }
+
   let form: FormData;
   try {
     form = await request.formData();
@@ -92,13 +107,12 @@ export const POST: APIRoute = async ({ request }) => {
   const total = files.reduce((sum, f) => sum + f.size, 0);
   if (total > MAX_TOTAL) return json(413, 'That is over the 350 MB limit.');
 
-  // Before the record is opened or a byte goes to the bucket.
-  const check = await turnstile(request, form);
-  if (check === 'unconfigured') {
-    console.error('ftp: TURNSTILE_SECRET_KEY is not set');
-    return json(503, 'File upload is not connected yet. Please email your files to info@boldeimaging.com or call (416) 241 2800.');
+  // No header: check the form's own token, before the record is opened or a
+  // byte goes to the bucket.
+  if (!sent) {
+    const check = await turnstile(request, formToken(form));
+    if (check === 'failed') return json(400, 'The security check did not pass. Please try again.');
   }
-  if (check === 'failed') return json(400, 'The security check did not pass. Please try again.');
 
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
   const prefix = `${stamp}/${safeName(task)}`;

@@ -26,14 +26,27 @@ export function requestHost(request: Request): string {
   return host.trim().toLowerCase().replace(/:\d+$/, '');
 }
 
+/** The token the widget added to the form, if the form was read. */
+export const formToken = (form: FormData) => {
+  const token = form.get('cf-turnstile-response');
+  return typeof token === 'string' ? token : null;
+};
+
+/**
+ * The token the page sent in the x-turnstile-token header. A token lasts five
+ * minutes, and a large upload can take longer than that to arrive, so the FTP
+ * form sends it here: it is checked before the body is read (the Node adapter
+ * streams the body, so this runs as the upload starts, not after it ends).
+ */
+export const headerToken = (request: Request) => request.headers.get('x-turnstile-token');
+
 export async function turnstile(
   request: Request,
-  form: FormData
+  token: string | null
 ): Promise<'ok' | 'failed' | 'unconfigured'> {
   const secret = process.env.TURNSTILE_SECRET_KEY;
   if (!secret) return 'unconfigured';
-  const token = form.get('cf-turnstile-response');
-  if (typeof token !== 'string' || !token) return 'failed';
+  if (!token) return 'failed';
   const body = new FormData();
   body.append('secret', secret);
   body.append('response', token);
