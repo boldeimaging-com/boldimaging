@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { recordContact, requestContext, setDelivery } from '../../lib/submissions';
 import { getContactRecipients } from '../../lib/settings';
+import { stagingRecipients, turnstile } from '../../lib/form-guard';
 
 /**
  * POST /api/contact — the /contact/ form.
@@ -69,6 +70,14 @@ export const POST: APIRoute = async ({ request }) => {
     return json(422, 'Please check the email address.');
   }
 
+  // Before anything is recorded, so spam leaves no rows.
+  const check = await turnstile(request, form);
+  if (check === 'unconfigured') {
+    console.error('contact: TURNSTILE_SECRET_KEY is not set');
+    return json(503, 'The contact form is not connected yet. Please email info@boldeimaging.com or call (416) 241 2800.');
+  }
+  if (check === 'failed') return json(400, 'The security check did not pass. Please try again.');
+
   const fields: Array<[string, string]> = [
     ['First name', name],
     ['Last name', text(form, 'last_name', 200)],
@@ -104,7 +113,9 @@ export const POST: APIRoute = async ({ request }) => {
   });
 
   // Edited at /admin/; the CONTACT_TO variable until someone saves a list there.
-  const { recipients } = await getContactRecipients();
+  // On staging, STAGING_TO instead (lib/form-guard.ts).
+  const staging = stagingRecipients(request);
+  const recipients = staging ?? (await getContactRecipients()).recipients;
 
   if (!secrets.RESEND_API_KEY || !recipients.length) {
     await setDelivery('contact_submissions', record.id, 'unconfigured');
@@ -130,7 +141,7 @@ export const POST: APIRoute = async ({ request }) => {
       from: secrets.CONTACT_FROM || 'BolDe Imaging <noreply@boldeimaging.com>',
       to: recipients,
       reply_to: email || undefined,
-      subject: `Website enquiry from ${name}`,
+      subject: `${staging ? '[Staging] ' : ''}Website enquiry from ${name}`,
       html: body,
     }),
   });
