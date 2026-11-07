@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { recordContact, requestContext, setDelivery } from '../../lib/submissions';
 import { getContactRecipients } from '../../lib/settings';
-import { stagingRecipients, turnstile } from '../../lib/form-guard';
+import { formToken, stagingRecipients, turnstile } from '../../lib/form-guard';
 
 /**
  * POST /api/contact — the /contact/ form.
@@ -71,7 +71,8 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   // Before anything is recorded, so spam leaves no rows.
-  const check = await turnstile(request, form);
+  // A contact form arrives in seconds, so the token in the form is still fresh.
+  const check = await turnstile(request, formToken(form));
   if (check === 'unconfigured') {
     console.error('contact: TURNSTILE_SECRET_KEY is not set');
     return json(503, 'The contact form is not connected yet. Please email info@boldeimaging.com or call (416) 241 2800.');
