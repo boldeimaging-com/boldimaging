@@ -57,3 +57,27 @@ export function describeListing(what: string): string {
       `Mississauga since 1976. Interior and exterior signage, coast to coast.`,
   );
 }
+
+const TITLE_IDEAL = 60; // where Google truncates
+const TITLE_MAX = 70; // SEO.astro's schema bound; over it the page throws
+
+/**
+ * Title for a page named after one thing (a portfolio entry). The bare
+ * "<name> – BolDe Imaging" is 23-31 characters for most entries, so add the
+ * town the business is in when that still fits under the ~60-character cut.
+ * Falls back to the plain form, and as a last resort clips the name, so a long
+ * entry added at /admin/work/ can never push this on-demand page past the
+ * 70-character bound and turn it into a 500.
+ */
+export function entityTitle(name: string): string {
+  const n = name.replace(/\s+/g, ' ').trim();
+  const local = `${n} | BolDe Imaging, Mississauga`;
+  if (local.length <= TITLE_IDEAL) return local;
+  const plain = `${n} – BolDe Imaging`;
+  if (plain.length <= TITLE_MAX) return plain;
+  const suffix = '… – BolDe Imaging';
+  const room = n.slice(0, TITLE_MAX - suffix.length);
+  const sp = room.lastIndexOf(' ');
+  const cut = sp > 10 ? room.slice(0, sp) : room;
+  return `${cut.replace(/[,;:&\s]+$/, '')}${suffix}`;
+}
