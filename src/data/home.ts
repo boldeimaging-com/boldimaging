@@ -238,25 +238,25 @@ export const ASSOCIATIONS: Img[] = [
   },
   {
     "src": "2021/04/untas-1.png",
-    "alt": "",
+    "alt": "International Sign Association",
     "w": 150,
     "h": 102
   },
   {
     "src": "2021/04/sacc-1.png",
-    "alt": "",
+    "alt": "Sign Association of Canada",
     "w": 150,
     "h": 102
   },
   {
     "src": "2021/04/contra-1.png",
-    "alt": "",
+    "alt": "ContractorCheck",
     "w": 150,
     "h": 102
   },
   {
     "src": "2021/04/osa-1.png",
-    "alt": "",
+    "alt": "Ontario Sign Association",
     "w": 150,
     "h": 102
   }

@@ -13,7 +13,7 @@
 // Rendered on demand from portfolio_items, so an entry added at /admin/work/
 // has its page at once. Prev/Next follow the Our Work grid order.
 import Base from '../../layouts/Base.astro';
-import { metaDescription, describeListing } from '../../lib/seo';
+import { metaDescription, describeListing, entityTitle } from '../../lib/seo';
 import { getPortfolio, paragraphs, workImage } from '../../lib/portfolio-source';
 
 export const prerender = false;
@@ -29,7 +29,7 @@ const next = i < items.length - 1 ? items[i + 1] : null;
 ---
 
 <Base
-  title={`${item.title} – BolDe Imaging`}
+  title={entityTitle(item.title)}
   description={metaDescription(item.body, describeListing(item.title))}
   ogImage={new URL(workImage(item.image), Astro.site ?? 'https://boldeimaging.com').href}
 >
