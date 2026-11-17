@@ -29,7 +29,9 @@ const next = i < items.length - 1 ? items[i + 1] : null;
 ---
 
 <Base
-  title={`${item.title} – BolDe Imaging`}
+  title={`${item.title} – BolDe Imaging`.length < 30
+    ? `${item.title} – Sign Projects by BolDe Imaging`
+    : `${item.title} – BolDe Imaging`}
   description={metaDescription(item.body, describeListing(item.title))}
   ogImage={new URL(workImage(item.image), Astro.site ?? 'https://boldeimaging.com').href}
 >
