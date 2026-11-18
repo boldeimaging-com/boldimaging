@@ -42,6 +42,15 @@ export const prerender = true;
 // ever pointed at the Backblaze bucket, that bucket does not contain this
 // derived poster.
 const POSTER = '/media/2025/04/Bolde-Imaging-Video-poster.webp';
+
+// Same rule, same reason: a re-encode of Bolde-Imaging-Video.mp4 (the
+// WordPress upload, 18.7 MB, 1080p at 60 fps, index at the END of the file so
+// playback could not start until the browser had fetched the tail). This copy
+// is 1080p at 30 fps, H.264 CRF 30, with the index moved to the front
+// (+faststart): 12.4 MB, SSIM 0.98 against the original. It plays under a 50%
+// black overlay, so the difference is not visible. New filename rather than an
+// in-place swap because /media is served `immutable` for a year.
+const HERO_VIDEO = '/media/2025/04/Bolde-Imaging-Video-1080p30.mp4';
 ---
 
 <Base
@@ -60,7 +69,7 @@ const POSTER = '/media/2025/04/Bolde-Imaging-Video-poster.webp';
   <section class="hero">
     <div class="hero__video">
       <video
-        src={media('2025/04/Bolde-Imaging-Video.mp4')}
+        src={HERO_VIDEO}
         poster={POSTER}
         autoplay
         muted
