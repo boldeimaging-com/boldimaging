@@ -222,41 +222,42 @@ export const CLIENTS: Img[] = [
   }
 ];
 
-/** "Associations" -- a plain 3-column WordPress gallery, no links. */
+/** "Associations" -- a plain 3-column WordPress gallery, no links. Alt text is
+ * the name printed on each logo (empty on the WordPress original). */
 export const ASSOCIATIONS: Img[] = [
   {
     "src": "2021/04/bild-2.png",
-    "alt": "",
+    "alt": "BILD logo",
     "w": 125,
     "h": 85
   },
   {
     "src": "2021/04/SA-2.png",
-    "alt": "",
+    "alt": "CSA logo",
     "w": 100,
     "h": 68
   },
   {
     "src": "2021/04/untas-1.png",
-    "alt": "",
+    "alt": "International Sign Association logo",
     "w": 150,
     "h": 102
   },
   {
     "src": "2021/04/sacc-1.png",
-    "alt": "",
+    "alt": "Sign Association of Canada (SAC-ACE) logo",
     "w": 150,
     "h": 102
   },
   {
     "src": "2021/04/contra-1.png",
-    "alt": "",
+    "alt": "ContractorCheck logo",
     "w": 150,
     "h": 102
   },
   {
     "src": "2021/04/osa-1.png",
-    "alt": "",
+    "alt": "Ontario Sign Association logo",
     "w": 150,
     "h": 102
   }

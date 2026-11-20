@@ -26,10 +26,14 @@ if (i < 0) return new Response(null, { status: 404 });
 const item = items[i];
 const prev = i > 0 ? items[i - 1] : null;
 const next = i < items.length - 1 ? items[i + 1] : null;
+// Short entry titles ("Awnings", "Banners") made 23-28 character page titles;
+// add the city when it still fits Google's ~65-character display width.
+const baseTitle = `${item.title} – BolDe Imaging`;
+const pageTitle = baseTitle.length < 30 ? `${item.title} – BolDe Imaging, Mississauga` : baseTitle;
 ---
 
 <Base
-  title={`${item.title} – BolDe Imaging`}
+  title={pageTitle}
   description={metaDescription(item.body, describeListing(item.title))}
   ogImage={new URL(workImage(item.image), Astro.site ?? 'https://boldeimaging.com').href}
 >
