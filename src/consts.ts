@@ -32,7 +32,10 @@ export const SITE = {
   title: 'BolDe Imaging',
   tagline: 'We Build Brands',
   phone: '(416) 241 2800',
-  phoneHref: 'tel:4162412800',
+  // E.164, matching the JSON-LD telephone in seo.config.ts. A bare 10-digit
+  // number dials fine in North America but is ambiguous to click-to-call
+  // handlers and call-extension checks outside it.
+  phoneHref: 'tel:+14162412800',
   email: 'info@boldeimaging.com',
   address: '5648 McAdam Rd, Mississauga, ON L4Z 1T2',
   mapsUrl:

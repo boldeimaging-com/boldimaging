@@ -26,10 +26,17 @@ if (i < 0) return new Response(null, { status: 404 });
 const item = items[i];
 const prev = i > 0 ? items[i - 1] : null;
 const next = i < items.length - 1 ? items[i + 1] : null;
+
+// Most entry names are one or two words ("Awnings – BolDe Imaging" is 23
+// characters), well short of a useful title. Name the location too, as long as
+// the result still fits the 65 characters Google shows; the longest entries
+// already fill it and keep the plain form.
+const baseTitle = `${item.title} – BolDe Imaging`;
+const pageTitle = baseTitle.length + ', Mississauga'.length <= 65 ? `${baseTitle}, Mississauga` : baseTitle;
 ---
 
 <Base
-  title={`${item.title} – BolDe Imaging`}
+  title={pageTitle}
   description={metaDescription(item.body, describeListing(item.title))}
   ogImage={new URL(workImage(item.image), Astro.site ?? 'https://boldeimaging.com').href}
 >
