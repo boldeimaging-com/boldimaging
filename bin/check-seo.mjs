@@ -68,11 +68,18 @@ for (const f of walk(dist)) {
 
   const origin = canonicalOrigin(html);
   const hasNoindex = /<meta[^>]+name=["']robots["'][^>]+content=["'][^"']*noindex/i.test(html);
-  if (origin) {
+  if (rel === '404.html') {
+    // Served at every unmatched address, in both modes: always noindex, and
+    // never a canonical or og:url, which would name /404/ as the preferred
+    // URL of every broken link. Not counted as a preview or production page.
+    if (!hasNoindex) fails.push([rel, '404 page must be noindex']);
+    if (origin) fails.push([rel, '404 page must not emit a canonical']);
+    if (/property=["']og:url["']/i.test(html)) fails.push([rel, '404 page emits og:url']);
+  } else if (origin) {
     origins.add(origin);
     productionPages++;
     if (!PROD.test(origin)) fails.push([rel, `canonical ${origin} is not the production origin`]);
-    if (hasNoindex && rel !== '404.html') fails.push([rel, 'production page carries noindex']);
+    if (hasNoindex) fails.push([rel, 'production page carries noindex']);
   } else {
     previewPages++;
     if (!hasNoindex) fails.push([rel, 'no canonical (preview) but no noindex meta']);
