@@ -36,9 +36,6 @@ const schema = z.object({
 export type Props = z.input<typeof schema>;
 
 const production = isProductionSite(Astro.site);
-// Preview builds get no canonical at all (a staging canonical is wrong, and a
-// production one would point at the old WordPress site).
-const canonical = production ? new URL(Astro.url.pathname, Astro.site).href : undefined;
 
 const parsed = schema.safeParse(Astro.props);
 if (!parsed.success) {
@@ -51,6 +48,14 @@ if (!parsed.success) {
 }
 const { title, description, ogImage, jsonld } = parsed.data;
 const noindex = parsed.data.noindex || !production;
+// Preview builds get no canonical at all (a staging canonical is wrong, and a
+// production one would point at the old WordPress site). Neither does a page
+// that asks for noindex itself: the 404 page is served, with a 404 status, at
+// every address nothing else matches, so its canonical claimed that every
+// broken link's preferred URL was https://boldeimaging.com/404/ -- an address
+// that is itself a 404. noindex plus a canonical is a mixed signal anyway.
+const canonical =
+  production && !parsed.data.noindex ? new URL(Astro.url.pathname, Astro.site).href : undefined;
 
 const image = ogImage ?? site.defaultOgImage;
 const structured = jsonld ?? site.organizationJsonld;
