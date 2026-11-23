@@ -38,6 +38,34 @@ export function metaDescription(body: string, fallback: string): string {
   return `${(atWord.length >= MIN ? atWord : cut).replace(/[,;:\s]+$/, '')}…`;
 }
 
+/**
+ * Below this a description leaves most of the snippet empty. Four portfolio
+ * bodies come in at 75-107 characters ("Whether you need a short banner or the
+ * longest banner, we have you covered.") and say nothing about who or where.
+ */
+const SHORT = 110;
+
+/**
+ * Add who and where to a description too short to carry them, choosing the
+ * longest suffix that still fits inside MAX. A description that is already
+ * long enough, or that no suffix fits, is returned unchanged. The facts are
+ * the ones the footer and JSON-LD already state (Mississauga, since 1976).
+ */
+export function withBusinessContext(description: string, what: string): string {
+  const d = description.trim();
+  if (d.length >= SHORT) return d;
+  const suffixes = [
+    `${what} by BolDe Imaging, signage manufacturer in Mississauga since 1976.`,
+    `BolDe Imaging, signage manufacturer in Mississauga since 1976.`,
+    `BolDe Imaging, Mississauga.`,
+  ];
+  for (const s of suffixes) {
+    const out = `${d} ${s}`;
+    if (out.length <= MAX) return out;
+  }
+  return d;
+}
+
 /** Last resort: keep a generated fallback inside the same bounds. */
 function clamp(s: string): string {
   const t = s.replace(/\s+/g, ' ').trim();
