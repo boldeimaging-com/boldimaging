@@ -8,215 +8,216 @@ export interface Img {
   h: number;
 }
 
-/** "Our Great Clients" carousel -- 4 per view, continuous scroll. */
+/** "Our Great Clients" carousel -- 4 per view, continuous scroll. Alt text is
+ * the name printed on each logo (WordPress used the file name, e.g. "Logo-05"). */
 export const CLIENTS: Img[] = [
   {
     "src": "2021/04/Logo-05-768x549.png",
-    "alt": "Logo-05",
+    "alt": "Cineplex logo",
     "w": 768,
     "h": 549
   },
   {
     "src": "2021/04/Logo-04-768x549.png",
-    "alt": "Logo-04",
+    "alt": "Circle K logo",
     "w": 768,
     "h": 549
   },
   {
     "src": "2021/04/Logo-01-768x549.png",
-    "alt": "Logo-01",
+    "alt": "Bamiyan Kabob logo",
     "w": 768,
     "h": 549
   },
   {
     "src": "2021/04/Logo-02-768x548.png",
-    "alt": "Logo-02",
+    "alt": "Mattamy Homes logo",
     "w": 768,
     "h": 548
   },
   {
     "src": "2021/04/Logo-03-768x549.png",
-    "alt": "Logo-03",
+    "alt": "Freshii logo",
     "w": 768,
     "h": 549
   },
   {
     "src": "2021/04/Logo-06-768x548.png",
-    "alt": "Logo-06",
+    "alt": "The Rec Room logo",
     "w": 768,
     "h": 548
   },
   {
     "src": "2021/05/pemberton.png",
-    "alt": "pemberton",
+    "alt": "Pemberton logo",
     "w": 400,
     "h": 286
   },
   {
     "src": "2021/05/peloton.png",
-    "alt": "peloton",
+    "alt": "Peloton logo",
     "w": 400,
     "h": 286
   },
   {
     "src": "2021/05/pinnacle.png",
-    "alt": "pinnacle",
+    "alt": "Pinnacle International logo",
     "w": 400,
     "h": 286
   },
   {
     "src": "2021/05/playdium.png",
-    "alt": "playdium",
+    "alt": "Playdium logo",
     "w": 400,
     "h": 286
   },
   {
     "src": "2021/05/prombank.png",
-    "alt": "prombank",
+    "alt": "Prombank logo",
     "w": 400,
     "h": 286
   },
   {
     "src": "2021/05/saks.png",
-    "alt": "saks",
+    "alt": "Saks Fifth Avenue logo",
     "w": 400,
     "h": 286
   },
   {
     "src": "2021/05/showcase.png",
-    "alt": "showcase",
+    "alt": "Showcase logo",
     "w": 400,
     "h": 286
   },
   {
     "src": "2021/05/signarama.png",
-    "alt": "signarama",
+    "alt": "Signarama logo",
     "w": 400,
     "h": 286
   },
   {
     "src": "2021/05/starlane.png",
-    "alt": "starlane",
+    "alt": "Starlane Home Corporation logo",
     "w": 400,
     "h": 286
   },
   {
     "src": "2021/05/sundial.png",
-    "alt": "sundial",
+    "alt": "Sundial Homes logo",
     "w": 400,
     "h": 286
   },
   {
     "src": "2021/05/tbooth.png",
-    "alt": "tbooth",
+    "alt": "Tbooth wireless logo",
     "w": 400,
     "h": 286
   },
   {
     "src": "2021/05/tesla.png",
-    "alt": "tesla",
+    "alt": "Tesla logo",
     "w": 400,
     "h": 286
   },
   {
     "src": "2021/05/unilever.png",
-    "alt": "unilever",
+    "alt": "Unilever logo",
     "w": 400,
     "h": 286
   },
   {
     "src": "2021/05/upfield.png",
-    "alt": "upfield",
+    "alt": "Upfield logo",
     "w": 400,
     "h": 286
   },
   {
     "src": "2021/05/wirelesswave.png",
-    "alt": "wirelesswave",
+    "alt": "Wirelesswave logo",
     "w": 400,
     "h": 286
   },
   {
     "src": "2021/05/adi.png",
-    "alt": "adi",
+    "alt": "ADI logo",
     "w": 400,
     "h": 286
   },
   {
     "src": "2021/05/alterra.png",
-    "alt": "alterra",
+    "alt": "Alterra logo",
     "w": 400,
     "h": 286
   },
   {
     "src": "2021/05/biddington.png",
-    "alt": "biddington",
+    "alt": "Biddington logo",
     "w": 400,
     "h": 286
   },
   {
     "src": "2021/05/cf.png",
-    "alt": "cf",
+    "alt": "CF logo",
     "w": 400,
     "h": 286
   },
   {
     "src": "2021/05/cn.png",
-    "alt": "cn",
+    "alt": "CN logo",
     "w": 400,
     "h": 286
   },
   {
     "src": "2021/05/furnbrook.png",
-    "alt": "furnbrook",
+    "alt": "Fernbrook Homes logo",
     "w": 400,
     "h": 286
   },
   {
     "src": "2021/05/gladiator.png",
-    "alt": "gladiator",
+    "alt": "Gladiator Burger & Steak logo",
     "w": 400,
     "h": 286
   },
   {
     "src": "2021/05/greenpark.png",
-    "alt": "greenpark",
+    "alt": "Greenpark Group logo",
     "w": 400,
     "h": 286
   },
   {
     "src": "2021/05/hudson-bay.png",
-    "alt": "hudson-bay",
+    "alt": "Hudson's Bay logo",
     "w": 400,
     "h": 286
   },
   {
     "src": "2021/05/liberty.png",
-    "alt": "liberty",
+    "alt": "Liberty Development logo",
     "w": 400,
     "h": 286
   },
   {
     "src": "2021/05/mediaresources.png",
-    "alt": "mediaresources",
+    "alt": "Media Resources logo",
     "w": 400,
     "h": 286
   },
   {
     "src": "2021/05/mondiale.png",
-    "alt": "mondiale",
+    "alt": "Mondiale Development logo",
     "w": 400,
     "h": 286
   },
   {
     "src": "2021/05/nordstrom.png",
-    "alt": "nordstrom",
+    "alt": "Nordstrom logo",
     "w": 400,
     "h": 286
   },
   {
     "src": "2021/05/papajohns.png",
-    "alt": "papajohns",
+    "alt": "Papa John's logo",
     "w": 400,
     "h": 286
   }
@@ -333,7 +334,7 @@ export const PROJECT_GALLERIES: Img[] = [
   },
   {
     "src": "2021/04/Green-Park-Large-Banner-768x576.jpg",
-    "alt": "GE DIGITAL CAMERA",
+    "alt": "Greenpark banner on construction hoarding",
     "w": 768,
     "h": 576
   },
