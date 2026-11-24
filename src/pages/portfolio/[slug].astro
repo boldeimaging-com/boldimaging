@@ -13,7 +13,7 @@
 // Rendered on demand from portfolio_items, so an entry added at /admin/work/
 // has its page at once. Prev/Next follow the Our Work grid order.
 import Base from '../../layouts/Base.astro';
-import { metaDescription, describeListing } from '../../lib/seo';
+import { metaDescription, describeListing, withBusinessContext } from '../../lib/seo';
 import { getPortfolio, paragraphs, workImage } from '../../lib/portfolio-source';
 
 export const prerender = false;
@@ -26,11 +26,15 @@ if (i < 0) return new Response(null, { status: 404 });
 const item = items[i];
 const prev = i > 0 ? items[i - 1] : null;
 const next = i < items.length - 1 ? items[i + 1] : null;
+// Short entry titles ("Awnings", "Banners") made 23-28 character page titles.
+// Say what the page is without claiming every project is in one city.
+const baseTitle = `${item.title} – BolDe Imaging`;
+const pageTitle = baseTitle.length < 30 ? `${item.title} – Signage by BolDe Imaging` : baseTitle;
 ---
 
 <Base
-  title={`${item.title} – BolDe Imaging`}
-  description={metaDescription(item.body, describeListing(item.title))}
+  title={pageTitle}
+  description={withBusinessContext(metaDescription(item.body, describeListing(item.title)), item.title)}
   ogImage={new URL(workImage(item.image), Astro.site ?? 'https://boldeimaging.com').href}
 >
   <section class="title-row page-top">
