@@ -1,26 +1,31 @@
 ---
 // /category/exterior/ and /category/interior/.
 //
-// These are the two addresses the "Our Work" flip boxes link to, and on the
-// live site they are empty: the portfolio custom post type is not in the
-// category archive loop, so WordPress renders the theme's page header and an
-// empty `.page-content`. Ported as-is -- an empty archive is what the links
-// currently reach, and inventing a listing here would be a redesign, not a
-// port. Worth raising with the client separately.
+// These are the two addresses the "Our Work" flip boxes link to. On the live
+// WordPress site they are empty: the portfolio custom post type is not in the
+// category archive loop, so the theme renders its page header and an empty
+// `.page-content`. Ported as-is, that left two indexable, sitemap-listed pages
+// with no content -- a dead end for anyone who clicks a category tag, and thin
+// content for search. The archive now lists the Our Work entries already
+// tagged with the category (the same `categories` field the flip boxes show),
+// as plain links inside the theme's existing `.page-content`. Nothing new is
+// claimed; the shell and heading are unchanged.
+//
+// Rendered on demand, like /services/, so an entry added or re-tagged at
+// /admin/work/ shows up here at once.
 import Base from '../../layouts/Base.astro';
 import { describeListing } from '../../lib/seo';
 import ThemeArchive from '../../components/ThemeArchive.astro';
+import { CATEGORIES, getPortfolio } from '../../lib/portfolio-source';
 
-export const prerender = true;
+export const prerender = false;
 
-export function getStaticPaths() {
-  return [
-    { params: { slug: 'exterior' }, props: { name: 'Exterior' } },
-    { params: { slug: 'interior' }, props: { name: 'Interior' } },
-  ];
-}
+const name = CATEGORIES.find((c) => c.toLowerCase() === Astro.params.slug);
+// An empty 404 makes Astro render src/pages/404.astro with that status.
+if (!name) return new Response(null, { status: 404 });
 
-const { name } = Astro.props as { name: string };
+const { items } = await getPortfolio();
+const work = items.filter((p) => p.categories.includes(name));
 ---
 
 <Base
@@ -29,5 +34,27 @@ const { name } = Astro.props as { name: string };
 >
   <ThemeArchive>
     <Fragment slot="heading">Category: <span>{name}</span></Fragment>
+    {
+      work.length > 0 && (
+        <ul class="category-list">
+          {work.map((p) => (
+            <li>
+              <a href={`/portfolio/${p.slug}/`}>{p.title}</a>
+            </li>
+          ))}
+        </ul>
+      )
+    }
   </ThemeArchive>
 </Base>
+
+<style>
+  .category-list {
+    margin: 0 0 40px;
+    padding-left: 1.25em;
+  }
+
+  .category-list li {
+    margin: 0 0 0.5em;
+  }
+</style>
