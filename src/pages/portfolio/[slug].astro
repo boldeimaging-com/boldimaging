@@ -81,12 +81,20 @@ const next = i < items.length - 1 ? items[i + 1] : null;
   <section class="body-row">
     <div class="container body-row__inner">
       <div class="col col--image">
+        {/*
+          The page's only project photo, and the one sitemap-images.xml lists
+          for this address. WordPress shipped it with alt="", which marks it
+          decorative and leaves image search nothing to index it by. The entry
+          title is the work shown; nothing more is claimed about the photo.
+          fetchpriority: it is the largest element above the fold here.
+        */}
         <img
           src={workImage(item.image)}
           width={item.imageWidth}
           height={item.imageHeight}
-          alt=""
+          alt={`${item.title} – signage project by BolDe Imaging`}
           loading="eager"
+          fetchpriority="high"
         />
       </div>
       <div class="col col--copy">
