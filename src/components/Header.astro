@@ -37,11 +37,21 @@ const solid = path !== '/';
     <div class="col col--logo">
       <div class="logo">
         <a href="/">
+          {/*
+            Rendered at most ~113px wide (22% of a 512px-capped link; 35% of
+            a half-width column on phones), so the 512px / 38 KB original was
+            the largest high-priority request on every page. The WordPress
+            150px and 300px renditions of the same file are already in
+            public/media; srcset lets the browser take the 1.6 KB 300px one
+            on a 2x screen. The `src` and intrinsic size stay the original's.
+          */}
           <img
             src={media('2021/04/Bolde_logo_White.png')}
+            srcset={`${media('2021/04/Bolde_logo_White-150x150.png')} 150w, ${media('2021/04/Bolde_logo_White-300x300.png')} 300w, ${media('2021/04/Bolde_logo_White.png')} 512w`}
+            sizes="(max-width: 767px) 18vw, 113px"
             width="512"
             height="512"
-            alt="Bolde Imaging Icon"
+            alt="BolDe Imaging home"
             fetchpriority="high"
           />
         </a>
